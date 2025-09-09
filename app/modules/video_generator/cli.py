@@ -7,7 +7,7 @@ import sys
 import uuid
 from pathlib import Path
 
-from app.modules.video_generator.pipeline import run_video_pipeline
+from app.modules.video_generator.main import VideoGenerator
 
 
 def _load_prompt(args: argparse.Namespace) -> str:
@@ -95,20 +95,20 @@ def main(argv: list[str] | None = None) -> int:
             if not args.quiet:
                 print(msg, file=sys.stderr, flush=True)
 
+        svc = VideoGenerator(uv_quiet=(args.quiet or args.json))
         result = asyncio.run(
-            run_video_pipeline(
+            svc.generate(
                 prompt,
-                video_id,
+                video_id=video_id,
                 scene_file=args.scene_file,
                 scene_name=args.scene_name,
                 extra_packages=list(args.extra) if args.extra else None,
                 on_log=_log,
-                uv_quiet=(args.quiet or args.json),
             )
         )
 
         if args.json:
-            print(json.dumps(_to_jsonable(result), indent=2))
+            print(json.dumps(VideoGenerator.to_jsonable(result), indent=2))
         else:
             _print_human(result)
         return 0 if result.ok else 1
