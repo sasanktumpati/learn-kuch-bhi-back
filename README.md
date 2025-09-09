@@ -16,7 +16,7 @@ A comprehensive learning platform that generates educational content including a
 ### Core Components
 
 - **Video Generator**: AI-driven Manim video creation pipeline
-- **Flashcard Generator**: Single and multi-topic flashcard generation
+- **Flashcards**: Outline-based multi-topic flashcard generation
 - **Database Layer**: PostgreSQL with SQLAlchemy ORM and Alembic migrations
 - **Authentication**: FastAPI-Users integration
 - **File Management**: Organized storage system for generated content
@@ -30,11 +30,11 @@ A comprehensive learning platform that generates educational content including a
 - `video_codes`: Generated Manim code storage
 
 #### Flashcard Tables
-- `flashcard_sets`: Collections of flashcards with metadata
-- `flashcards`: Individual question-answer pairs
-- `topic_outlines`: Structured topic hierarchies
-- `multi_flashcards_results`: Multi-agent generation results
-- `subtopic_flashcard_sets`: Links between outlines and flashcard sets
+- `multi_flashcards_results`: Multi-agent generation runs (stores outline JSON, status, timings)
+- `fc_topics`: Topics under a run (`multi_result_id` FK)
+- `fc_subtopics`: Subtopics under a topic (`topic_id` FK)
+- `flashcard_sets`: Flashcard set for a subtopic (`subtopic_id` FK, also `multi_result_id` for convenience)
+- `flashcards`: Individual question-answer pairs (`flashcard_set_id` FK)
 
 ## Quick Start
 
@@ -135,39 +135,24 @@ result, video_id = await generator.generate_with_db(
 )
 ```
 
-### Flashcard Generation
-
-#### Single Set Generation
-```python
-from app.modules.flashcards.main import FlashcardsGenerator
-
-# Basic generation
-generator = FlashcardsGenerator()
-flashcards = await generator.generate("Linear Algebra basics")
-
-# Database integration
-db_flashcard_set = await generator.generate_with_db(
-    session=session,
-    user_id=1,
-    prompt="Machine Learning fundamentals"
-)
-```
-
-#### Multi-Topic Generation
+### Flashcard Generation (Outline-based)
 ```python
 from app.modules.flashcards.main import MultiFlashcardsGenerator
 
 generator = MultiFlashcardsGenerator(concurrency=6)
 
-# Generate comprehensive flashcard sets with topic outline
+# Generate comprehensive flashcards with topic/subtopic outline (in-memory)
 result = await generator.generate("Advanced Physics - Quantum Mechanics")
 
-# Database integration
+# Database integration: persists the run, topics/subtopics, and all subtopic sets
 db_result = await generator.generate_with_db(
     session=session,
     user_id=1,
     base_prompt="Computer Science - Data Structures and Algorithms"
 )
+
+# db_result is a MultiFlashcardsResult row; related data accessible via ORM relationships
+print(db_result.id, len(db_result.topics))
 ```
 
 ### CLI Usage
@@ -186,8 +171,11 @@ uv run python -m app.modules.video_generator.cli \
 
 #### Flashcard Generation
 ```bash
-# Generate flashcards
-uv run python -m app.modules.flashcards.main "Organic Chemistry basics"
+# Generate multi-topic flashcards (outline + per-subtopic sets)
+uv run flashcards-gen generate-multi --prompt "Organic Chemistry basics"
+
+# or via module
+uv run python -m app.modules.flashcards.cli generate-multi --prompt "Organic Chemistry basics"
 ```
 
 ## API Integration
@@ -224,7 +212,7 @@ async def generate_video(
     }
 ```
 
-### Flashcard Generation Endpoint Example
+### Flashcard Generation Endpoint Example (Outline-based only)
 ```python
 @app.post("/generate-flashcards")
 async def generate_flashcards(
@@ -232,22 +220,19 @@ async def generate_flashcards(
     session: AsyncSession = Depends(get_session),
     current_user = Depends(get_current_user)
 ):
-    if request.multi_topic:
-        generator = MultiFlashcardsGenerator()
-        result = await generator.generate_with_db(
-            session=session,
-            user_id=current_user.id,
-            base_prompt=request.prompt
-        )
-    else:
-        generator = FlashcardsGenerator()
-        result = await generator.generate_with_db(
-            session=session,
-            user_id=current_user.id,
-            prompt=request.prompt
-        )
-    
-    return {"flashcard_set_id": result.id, "status": "completed"}
+    generator = MultiFlashcardsGenerator()
+    db_result = await generator.generate_with_db(
+        session=session,
+        user_id=current_user.id,
+        base_prompt=request.prompt
+    )
+
+    return {
+        "run_id": db_result.id,
+        "topics": len(db_result.topics),
+        "subtopics": sum(len(t.subtopics) for t in db_result.topics),
+        "status": str(db_result.status.value),
+    }
 ```
 
 ## Configuration

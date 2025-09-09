@@ -9,7 +9,7 @@ from fastapi_users_db_sqlalchemy import SQLAlchemyBaseUserTable
 from app.core.db.base import Base
 
 if TYPE_CHECKING:
-    from .flashcards import FlashcardSet, TopicOutline, MultiFlashcardsResult
+    from .flashcards import FlashcardSet, MultiFlashcardsResult
     from .videos import Videos, ManimConfig, ManimRenderRequest, VideoGenerationRequest
 
 
@@ -20,9 +20,6 @@ class User(SQLAlchemyBaseUserTable[int], Base):
     # Relationships
     flashcard_sets: Mapped[list["FlashcardSet"]] = relationship(
         "FlashcardSet", back_populates="user", cascade="all, delete-orphan"
-    )
-    topic_outlines: Mapped[list["TopicOutline"]] = relationship(
-        "TopicOutline", back_populates="user", cascade="all, delete-orphan"
     )
     multi_flashcards_results: Mapped[list["MultiFlashcardsResult"]] = relationship(
         "MultiFlashcardsResult", back_populates="user", cascade="all, delete-orphan"

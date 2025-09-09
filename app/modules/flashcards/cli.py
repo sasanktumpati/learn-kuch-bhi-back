@@ -4,7 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
-from app.modules.flashcards.main import FlashcardsGenerator, MultiFlashcardsGenerator
+from app.modules.flashcards.main import MultiFlashcardsGenerator
 
 
 def _load_prompt(args: argparse.Namespace) -> str:
@@ -23,11 +23,6 @@ def main(argv: list[str] | None = None) -> int:
     )
     sub = parser.add_subparsers(dest="cmd", required=True)
 
-    g = sub.add_parser("generate", help="Generate a flashcard set from a prompt")
-    g.add_argument("--prompt", "-p", help="User prompt/topic (text)")
-    g.add_argument("--prompt-file", help="Path to a file containing the prompt")
-    g.add_argument("--json", action="store_true", help="Output JSON (default)")
-
     gm = sub.add_parser(
         "generate-multi",
         help="Generate an outline and flashcards per subtopic (multi-agent; AI decides counts)",
@@ -40,13 +35,6 @@ def main(argv: list[str] | None = None) -> int:
     gm.add_argument("--json", action="store_true", help="Output JSON (default)")
 
     args = parser.parse_args(argv)
-    if args.cmd == "generate":
-        prompt = _load_prompt(args)
-        svc = FlashcardsGenerator()
-        result = svc.generate_sync(prompt)
-        # Always output JSON; flag is kept for symmetry with video-gen
-        print(json.dumps(FlashcardsGenerator.to_jsonable(result), indent=2))
-        return 0
     if args.cmd == "generate-multi":
         prompt = _load_prompt(args)
         svc = MultiFlashcardsGenerator(concurrency=args.concurrency)

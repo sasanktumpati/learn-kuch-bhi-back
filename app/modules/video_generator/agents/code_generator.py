@@ -21,7 +21,7 @@ from app.modules.video_generator.templates.manim_template import (
     default_manim_skeleton,
 )
 
-from pydantic_ai import Agent
+from pydantic_ai import Agent, ModelRetry
 from pydantic_ai._run_context import RunContext
 
 MODEL_NAME = "gemini-2.5-flash"
@@ -208,9 +208,32 @@ def _parse_ruff_json(output: str, file_hint: str) -> list[LintIssue]:
     return issues
 
 
-def _run(cwd: Path, *args: str) -> subprocess.CompletedProcess:
-    """Run a subprocess in ``cwd`` capturing output (text)."""
-    return subprocess.run(list(args), cwd=str(cwd), capture_output=True, text=True)
+def _run(
+    cwd: Path, *args: str, timeout_sec: Optional[float] = None
+) -> subprocess.CompletedProcess:
+    """Run a subprocess in ``cwd`` capturing output (text).
+
+    If ``timeout_sec`` is provided, the process is terminated on timeout and a
+    ``CompletedProcess``-like object is synthesized with non-zero returncode.
+    """
+    try:
+        return subprocess.run(
+            list(args),
+            cwd=str(cwd),
+            capture_output=True,
+            text=True,
+            timeout=timeout_sec,
+        )
+    except (
+        subprocess.TimeoutExpired
+    ) as ex:  # defensive: ensure we never hang indefinitely
+        return subprocess.CompletedProcess(
+            args=list(args),
+            returncode=124,
+            stdout=ex.stdout or "",
+            stderr=(ex.stderr or "")
+            + f"\nTimed out after {timeout_sec}s running: {' '.join(args)}",
+        )
 
 
 def build_code_agent() -> "Agent[None, ManimCode]":
@@ -221,6 +244,8 @@ def build_code_agent() -> "Agent[None, ManimCode]":
         model,
         output_type=ManimCode,
         system_prompt=SYSTEM_PROMPT,
+        # Retry model responses a few times for better self-correction
+        retries=3,
         toolsets=_build_context7_toolset() or None,
     )
     return agent
@@ -236,7 +261,12 @@ async def lint_tool(
 ) -> LintResult:
     """Run Ruff check and return structured issues."""
     file_name = file_name or ctx.deps.scene_file
-    return run_lint(ctx.deps.session_path, file_name)
+    result = run_lint(ctx.deps.session_path, file_name)
+    # If lint fails, ask the model to retry with corrections
+    if not result.ok:
+        # Provide a concise message; detailed issues are in result.issues/raw
+        raise ModelRetry("Lint failed; fix Ruff issues and try again.")
+    return result
 
 
 async def render_tool(
@@ -249,13 +279,17 @@ async def render_tool(
     """Render the scene via ``uv run manim`` and return result (lint enforced)."""
     file_name = file_name or ctx.deps.scene_file
     scene_name = scene_name or ctx.deps.scene_name
-    return run_render(
+    result = run_render(
         ctx.deps.session_path,
         file_name,
         scene_name,
         quality=quality,
         output_base=output_base,
     )
+    # If rendering fails, encourage the model to adjust the code and retry
+    if not result.ok:
+        raise ModelRetry("Render failed; revise Manim code or imports and try again.")
+    return result
 
 
 def build_session_code_agent(deps: SessionDeps) -> "Agent[SessionDeps, ManimCode]":
@@ -270,9 +304,12 @@ def build_session_code_agent(deps: SessionDeps) -> "Agent[SessionDeps, ManimCode
         deps_type=SessionDeps,
         tools=[
             Tool(docs_tool, takes_ctx=False),
-            Tool(lint_tool, takes_ctx=True),
-            Tool(render_tool, takes_ctx=True),
+            # Allow a couple of retries for tool calls that can fail transiently
+            Tool(lint_tool, takes_ctx=True, retries=2),
+            Tool(render_tool, takes_ctx=True, retries=2),
         ],
+        # Also give the model a few retries for output validation/self-correction
+        retries=3,
         toolsets=_build_context7_toolset() or None,
     )
     return agent
@@ -405,6 +442,8 @@ def run_render(
             ok=False, stdout=lint.raw, stderr="Lint failed; fix issues before rendering"
         )
 
+    # Apply a sane timeout so failed renders don't hang indefinitely.
+    # This is a hard cap; typical -qm/-ql runs should finish well before this.
     proc = _run(
         session_path,
         "uv",
@@ -415,6 +454,7 @@ def run_render(
         output_base,
         file_name,
         scene_name,
+        timeout_sec=600,
     )
     ok = proc.returncode == 0
     video_path = None

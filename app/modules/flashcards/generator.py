@@ -88,6 +88,8 @@ async def generate_outline(base_prompt: str) -> TopicOutline:
         model=model,
         output_type=TopicOutline,
         system_prompt=OUTLINE_SYSTEM_PROMPT,
+        # Allow a few retries to satisfy schema validation
+        retries=3,
     )
     instr = _outline_instruction(base_prompt)
     res = await agent.run(instr)
@@ -101,6 +103,8 @@ async def generate_flashcards(user_prompt: str) -> FlashcardSet:
         model=model,
         output_type=FlashcardSet,
         system_prompt=SYSTEM_PROMPT,
+        # Retries improve robustness for structured output
+        retries=3,
     )
     instruction = _build_instruction(user_prompt)
     res = await agent.run(instruction)
@@ -114,6 +118,7 @@ def generate_flashcards_sync(user_prompt: str) -> FlashcardSet:
         model=model,
         output_type=FlashcardSet,
         system_prompt=SYSTEM_PROMPT,
+        retries=3,
     )
     instruction = _build_instruction(user_prompt)
     res = agent.run_sync(instruction)

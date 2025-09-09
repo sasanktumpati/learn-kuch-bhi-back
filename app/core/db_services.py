@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 from app.core.db.schemas.videos import (
     VideoGenerationRequest,
@@ -16,18 +17,17 @@ from app.core.db.schemas.videos import (
 from app.core.db.schemas.flashcards import (
     FlashcardSet,
     Flashcard,
-    TopicOutline,
     MultiFlashcardsResult,
-    SubtopicFlashcardSet,
+    Topic,
     GenerationStatus as FlashcardGenerationStatus,
 )
-from app.modules.video_generator.pipeline import PipelineResult
 from app.modules.flashcards.models.flashcards import (
     FlashcardSet as PydanticFlashcardSet,
 )
 from app.modules.flashcards.models.outline import (
     MultiFlashcardsResult as PydanticMultiFlashcardsResult,
 )
+from app.modules.video_generator.pipeline import PipelineResult
 from app.core.video_manager import video_manager
 
 
@@ -94,7 +94,7 @@ class VideoGenerationService:
     async def save_generation_result(
         self,
         request_id: int,
-        pipeline_result: PipelineResult,
+        pipeline_result: "PipelineResult",
         user_id: int,
         title: str,
         description: str = "",
@@ -175,6 +175,9 @@ class FlashcardGenerationService:
         pydantic_set: PydanticFlashcardSet,
         original_prompt: str,
         status: FlashcardGenerationStatus = FlashcardGenerationStatus.COMPLETED,
+        *,
+        multi_result_id: int | None = None,
+        subtopic_id: int | None = None,
     ) -> FlashcardSet:
         """Save a Pydantic FlashcardSet to the database."""
 
@@ -185,6 +188,8 @@ class FlashcardGenerationService:
             tags=pydantic_set.tags,
             original_prompt=original_prompt,
             status=status,
+            multi_result_id=multi_result_id,
+            subtopic_id=subtopic_id,
         )
 
         self.session.add(db_set)
@@ -200,31 +205,15 @@ class FlashcardGenerationService:
             self.session.add(db_card)
 
         await self.session.commit()
-        await self.session.refresh(db_set)
-        return db_set
 
-    async def save_topic_outline(
-        self,
-        user_id: int,
-        outline: "TopicOutline",
-        original_prompt: str,
-        status: FlashcardGenerationStatus = FlashcardGenerationStatus.COMPLETED,
-    ) -> TopicOutline:
-        """Save a topic outline to the database."""
-        from app.core.db.schemas.flashcards import TopicOutline as DBTopicOutline
-
-        db_outline = DBTopicOutline(
-            user_id=user_id,
-            title=outline.title,
-            topics=outline.model_dump(),
-            original_prompt=original_prompt,
-            status=status,
+        # Eagerly load related flashcards so accessing db_set.flashcards
+        # (e.g., for len()) does not trigger a lazy load in async context.
+        result = await self.session.execute(
+            select(FlashcardSet)
+            .options(selectinload(FlashcardSet.flashcards))
+            .where(FlashcardSet.id == db_set.id)
         )
-
-        self.session.add(db_outline)
-        await self.session.commit()
-        await self.session.refresh(db_outline)
-        return db_outline
+        return result.scalar_one()
 
     async def save_multi_flashcards_result(
         self,
@@ -234,16 +223,9 @@ class FlashcardGenerationService:
         concurrency_setting: int = 6,
     ) -> MultiFlashcardsResult:
         """Save a multi-flashcards result with proper relationship management."""
-
-        db_outline = await self.save_topic_outline(
-            user_id=user_id,
-            outline=multi_result.outline,
-            original_prompt=original_prompt,
-        )
-
         db_multi_result = MultiFlashcardsResult(
             user_id=user_id,
-            outline_id=db_outline.id,
+            outline=multi_result.outline.model_dump(),
             original_prompt=original_prompt,
             concurrency_setting=concurrency_setting,
             status=FlashcardGenerationStatus.COMPLETED,
@@ -253,24 +235,67 @@ class FlashcardGenerationService:
         self.session.add(db_multi_result)
         await self.session.flush()
 
+        # Create relational topics and subtopics
+        # Build map: (topic_name, subtopic_name) -> subtopic_id
+        subtopic_index: dict[tuple[str, str], int] = {}
+        topics = multi_result.outline.topics or []
+        for t_idx, t in enumerate(topics):
+            res = await self.session.execute(
+                select(MultiFlashcardsResult).where(
+                    MultiFlashcardsResult.id == db_multi_result.id
+                )
+            )
+            # Create Topic row
+            from app.core.db.schemas.flashcards import (
+                Topic as DBTopic,
+                Subtopic as DBSubtopic,
+            )
+
+            db_topic = DBTopic(
+                multi_result_id=db_multi_result.id,
+                name=t.name,
+                description=None,
+                order_index=t_idx,
+            )
+            self.session.add(db_topic)
+            await self.session.flush()
+
+            for s_idx, s in enumerate(t.subtopics or []):
+                db_sub = DBSubtopic(
+                    topic_id=db_topic.id,
+                    name=s.name,
+                    description=getattr(s, "description", None),
+                    order_index=s_idx,
+                )
+                self.session.add(db_sub)
+                await self.session.flush()
+                subtopic_index[(t.name, s.name)] = db_sub.id
+
+        # Persist flashcard sets linked to subtopics
         for subtopic_set in multi_result.sets:
-            db_flashcard_set = await self.save_flashcard_set(
+            sub_id = subtopic_index.get((subtopic_set.topic, subtopic_set.subtopic))
+            _ = await self.save_flashcard_set(
                 user_id=user_id,
                 pydantic_set=subtopic_set.flashcard_set,
                 original_prompt=f"{original_prompt} - {subtopic_set.topic}: {subtopic_set.subtopic}",
-            )
-
-            db_subtopic_set = SubtopicFlashcardSet(
                 multi_result_id=db_multi_result.id,
-                flashcard_set_id=db_flashcard_set.id,
-                topic_name=subtopic_set.topic,
-                subtopic_name=subtopic_set.subtopic,
+                subtopic_id=sub_id,
             )
-            self.session.add(db_subtopic_set)
 
         await self.session.commit()
-        await self.session.refresh(db_multi_result)
-        return db_multi_result
+
+        # Eagerly load relationships needed by callers (flashcard_sets, topics, subtopics)
+        result = await self.session.execute(
+            select(MultiFlashcardsResult)
+            .options(
+                selectinload(MultiFlashcardsResult.flashcard_sets),
+                selectinload(MultiFlashcardsResult.topics).selectinload(
+                    Topic.subtopics
+                ),
+            )
+            .where(MultiFlashcardsResult.id == db_multi_result.id)
+        )
+        return result.scalar_one()
 
     async def update_multi_result_status(
         self,

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+
 from pydantic import BaseModel, Field
 from app.core.config import settings
 
@@ -42,11 +43,13 @@ SYSTEM_PROMPT = (
 
 
 def build_prompt_upgrader():
-    from pydantic_ai import Agent
-
     model = _build_google_model()
     agent: Agent[None, UpgradedPrompt] = Agent[None, UpgradedPrompt](
-        model, output_type=UpgradedPrompt, system_prompt=SYSTEM_PROMPT
+        model,
+        output_type=UpgradedPrompt,
+        system_prompt=SYSTEM_PROMPT,
+        # Retry a few times to improve validated structured output
+        retries=3,
     )
     return agent
 

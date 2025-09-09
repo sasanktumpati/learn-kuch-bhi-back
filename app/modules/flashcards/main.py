@@ -7,77 +7,18 @@ generator for a consistent developer experience.
 
 from __future__ import annotations
 
-from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.flashcards.generator import (
     generate_flashcards,
-    generate_flashcards_sync,
     generate_outline,
 )
-from app.modules.flashcards.models.flashcards import FlashcardSet
 from app.modules.flashcards.models.outline import (
     MultiFlashcardsResult,
     SubtopicFlashcards,
 )
-from app.core.db_services import FlashcardGenerationService
-
-
-class FlashcardsGenerator:
-    """High-level service for generating flashcard sets.
-
-    Example (async):
-        svc = FlashcardsGenerator()
-        fc = await svc.generate("Basics of Linear Algebra")
-
-    Example (sync):
-        svc = FlashcardsGenerator()
-        fc = svc.generate_sync("Photosynthesis for 8th graders")
-
-    Example (with database):
-        svc = FlashcardsGenerator()
-        db_set = await svc.generate_with_db(session, user_id=1, prompt="Linear Algebra")
-    """
-
-    def __init__(self) -> None:
-        pass
-
-    async def generate(self, prompt: str) -> FlashcardSet:
-        """Generate a flashcard set asynchronously."""
-        return await generate_flashcards(prompt)
-
-    def generate_sync(self, prompt: str) -> FlashcardSet:
-        """Synchronous wrapper for convenience and scripting."""
-
-        return generate_flashcards_sync(prompt)
-
-    async def generate_with_db(
-        self,
-        session: AsyncSession,
-        user_id: int,
-        prompt: str,
-    ) -> "FlashcardSet":  # Returns DB model, not Pydantic
-        """Generate flashcards and store in database."""
-        # Import handled in service layer
-
-        # Generate the flashcards
-        pydantic_set = await self.generate(prompt)
-
-        # Store in database
-        db_service = FlashcardGenerationService(session)
-        db_set = await db_service.save_flashcard_set(
-            user_id=user_id,
-            pydantic_set=pydantic_set,
-            original_prompt=prompt,
-        )
-
-        return db_set
-
-    @staticmethod
-    def to_jsonable(flashcards: FlashcardSet) -> dict:
-        """Convert a FlashcardSet into a JSON-serializable dict."""
-        return flashcards.model_dump()
+# Imports moved to method level to avoid circular imports
 
 
 class MultiFlashcardsGenerator:
@@ -92,35 +33,22 @@ class MultiFlashcardsGenerator:
     ) -> MultiFlashcardsResult:
         outline = await generate_outline(base_prompt)
 
-        # Build tasks for subtopics
-        import asyncio
-
-        sem = asyncio.Semaphore(self.concurrency)
+        # Generate flashcards for subtopics sequentially
         results: list[SubtopicFlashcards] = []
 
-        async def _one(topic_name: str, subtopic_name: str) -> None:
-            async with sem:
+        for t in outline.topics or []:
+            for s in t.subtopics or []:
                 prompt = (
                     f"Generate a sensible, study-friendly number of high-quality flashcards for "
-                    f"the subtopic '{subtopic_name}' under the topic '{topic_name}'. "
+                    f"the subtopic '{s.name}' under the topic '{t.name}'. "
                     f"Overall subject: {base_prompt}. "
                     "Audience: undergrad-friendly, precise. "
                     "No markdown; plain text questions and answers."
                 )
                 fc = await generate_flashcards(prompt)
                 results.append(
-                    SubtopicFlashcards(
-                        topic=topic_name, subtopic=subtopic_name, flashcard_set=fc
-                    )
+                    SubtopicFlashcards(topic=t.name, subtopic=s.name, flashcard_set=fc)
                 )
-
-        tasks: list[asyncio.Task] = []
-        for t in outline.topics or []:
-            for s in t.subtopics or []:
-                tasks.append(asyncio.create_task(_one(t.name, s.name)))
-
-        if tasks:
-            await asyncio.gather(*tasks)
 
         return MultiFlashcardsResult(outline=outline, sets=results)
 
@@ -131,7 +59,7 @@ class MultiFlashcardsGenerator:
         base_prompt: str,
     ) -> "MultiFlashcardsResult":  # Returns DB model
         """Generate multi-flashcards with outline and store everything in database."""
-        # Import handled in service layer
+        from app.core.db_services import FlashcardGenerationService
 
         # Generate the multi-flashcards result
         pydantic_result = await self.generate(base_prompt)
@@ -154,27 +82,3 @@ class MultiFlashcardsGenerator:
         import asyncio
 
         return asyncio.run(self.generate(base_prompt))
-
-
-def main(prompt: Optional[str] = None) -> int:
-    """Ad-hoc entry: generate once and print JSON to stdout.
-
-    Not wired to a console script by default; useful for quick local testing.
-    """
-    import json
-
-    if not prompt:
-        print("Provide a prompt argument to generate flashcards.")
-        return 2
-    svc = FlashcardsGenerator()
-
-    fc = svc.generate_sync(prompt)
-    print(json.dumps(fc.model_dump(), ensure_ascii=False, indent=2))
-    return 0
-
-
-if __name__ == "__main__":
-    import sys
-
-    arg = sys.argv[1] if len(sys.argv) > 1 else None
-    raise SystemExit(main(arg))

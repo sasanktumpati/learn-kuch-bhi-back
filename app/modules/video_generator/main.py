@@ -15,9 +15,6 @@ from typing import Callable, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.video_generator.pipeline import PipelineResult, run_video_pipeline
-from app.modules.video_generator.cli import main as _cli_main
-from app.core.db_services import VideoGenerationService
-from app.core.db.schemas.videos import GenerationStatus
 
 
 class VideoGenerator:
@@ -115,6 +112,9 @@ class VideoGenerator:
         max_runtime_fix_attempts: int = 2,
     ) -> tuple[PipelineResult, Optional[int]]:  # Returns (result, video_id_in_db)
         """Generate video and store all data in database with proper tracking."""
+        from app.core.db_services import VideoGenerationService
+        from app.core.db.schemas.videos import GenerationStatus
+
         vid = video_id or str(uuid.uuid4())
 
         # Create database service
@@ -190,6 +190,8 @@ class VideoGenerator:
 
 
 def main(argv: list[str] | None = None) -> int:
+    from app.modules.video_generator.cli import main as _cli_main
+
     return _cli_main(argv)
 
 
