@@ -7,13 +7,18 @@ requires-python = ">=3.13"
 dependencies = [
     "alembic>=1.16.5",
     "fastapi>=0.116.1",
+    "fastapi-users[sqlalchemy]>=13.0.0",
+    "fastapi-users-db-sqlalchemy>=6.0.0",
     "google-genai>=1.33.0",
     "manim>=0.19.0",
     "moviepy>=2.2.1",
     "pydantic>=2.11.7",
+    "pydantic-settings>=2.6.1",
     "pydantic-ai>=1.0.1",
     "sarvamai>=0.1.19",
     "sqlalchemy>=2.0.43",
+    "asyncpg>=0.30.0",
+    "uvicorn>=0.35.0",
 ]
 
 [project.scripts]
