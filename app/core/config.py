@@ -44,6 +44,18 @@ class RedisSettings(BaseSettings):
             return RedisDsn(f"redis://{self.host}:{self.port}/{self.db}")
 
 
+class JWTSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        extra="ignore",
+    )
+    issuer: str = Field(default="https://auth.example.com", alias="JWT_ISSUER")
+    application_id: str = Field(default="my-app-id", alias="JWT_APPLICATION_ID")
+    token_lifetime_seconds: int = Field(
+        default=3600, alias="JWT_TOKEN_LIFETIME_SECONDS"
+    )
+
+
 class AppSettings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -73,6 +85,7 @@ class Settings(BaseSettings):
     app: AppSettings = Field(default_factory=lambda: AppSettings())
     postgres: PostgresSettings = Field(default_factory=lambda: PostgresSettings())
     redis: RedisSettings = Field(default_factory=lambda: RedisSettings())
+    jwt: JWTSettings = Field(default_factory=lambda: JWTSettings())
 
     gemini_api_key: str = Field(default=None, alias="GEMINI_API_KEY")
     openrouter_api_key: str = Field(default=None, alias="OPENROUTER_API_KEY")

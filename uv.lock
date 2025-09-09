@@ -1124,6 +1124,19 @@ wheels = [
 ]
 
 [[package]]
+name = "jwcrypto"
+version = "1.5.6"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cryptography" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e1/db/870e5d5fb311b0bcf049630b5ba3abca2d339fd5e13ba175b4c13b456d08/jwcrypto-1.5.6.tar.gz", hash = "sha256:771a87762a0c081ae6166958a954f80848820b2ab066937dc8b8379d65b1b039", size = 87168, upload-time = "2024-03-06T19:58:31.831Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cd/58/4a1880ea64032185e9ae9f63940c9327c6952d5584ea544a8f66972f2fda/jwcrypto-1.5.6-py3-none-any.whl", hash = "sha256:150d2b0ebbdb8f40b77f543fb44ffd2baeff48788be71f67f03566692fd55789", size = 92520, upload-time = "2024-03-06T19:58:29.765Z" },
+]
+
+[[package]]
 name = "learn-kuch-bhi"
 version = "0.1.0"
 source = { virtual = "." }
@@ -1134,11 +1147,14 @@ dependencies = [
     { name = "fastapi-users", extra = ["sqlalchemy"] },
     { name = "fastapi-users-db-sqlalchemy" },
     { name = "google-genai" },
+    { name = "jwcrypto" },
     { name = "manim" },
     { name = "moviepy" },
     { name = "pydantic" },
     { name = "pydantic-ai" },
     { name = "pydantic-settings" },
+    { name = "pyjwt" },
+    { name = "python-dotenv" },
     { name = "sarvamai" },
     { name = "sqlalchemy" },
     { name = "uvicorn" },
@@ -1152,11 +1168,14 @@ requires-dist = [
     { name = "fastapi-users", extras = ["sqlalchemy"], specifier = ">=13.0.0" },
     { name = "fastapi-users-db-sqlalchemy", specifier = ">=6.0.0" },
     { name = "google-genai", specifier = ">=1.33.0" },
+    { name = "jwcrypto", specifier = ">=1.5.6" },
     { name = "manim", specifier = ">=0.19.0" },
     { name = "moviepy", specifier = ">=2.2.1" },
     { name = "pydantic", specifier = ">=2.11.7" },
     { name = "pydantic-ai", specifier = ">=1.0.1" },
     { name = "pydantic-settings", specifier = ">=2.6.1" },
+    { name = "pyjwt", specifier = ">=2.8.0" },
+    { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "sarvamai", specifier = ">=0.1.19" },
     { name = "sqlalchemy", specifier = ">=2.0.43" },
     { name = "uvicorn", specifier = ">=0.35.0" },

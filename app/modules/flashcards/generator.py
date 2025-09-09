@@ -14,7 +14,7 @@ from app.modules.flashcards.models.flashcards import FlashcardSet
 from app.modules.flashcards.models.outline import TopicOutline
 
 OUTLINE_MODEL_NAME = "gemini-2.5-pro"
-FLASHCARDS_MODEL_NAME = "gemini-2.5-flash-lite"
+FLASHCARDS_MODEL_NAME = "gemini-2.0-flash"
 
 
 def _build_google_model(model_name: str, *, thinking_budget: int | None = None):
@@ -60,8 +60,6 @@ def _build_instruction(user_prompt: str) -> str:
     )
 
 
-# Outline generation ---------------------------------------------------------
-
 OUTLINE_SYSTEM_PROMPT = (
     "You design clean, pragmatic learning outlines (topics and subtopics). "
     "Return a JSON object matching the TopicOutline model: {title, topics}. "
@@ -88,7 +86,6 @@ async def generate_outline(base_prompt: str) -> TopicOutline:
         model=model,
         output_type=TopicOutline,
         system_prompt=OUTLINE_SYSTEM_PROMPT,
-        # Allow a few retries to satisfy schema validation
         retries=3,
     )
     instr = _outline_instruction(base_prompt)
@@ -103,7 +100,6 @@ async def generate_flashcards(user_prompt: str) -> FlashcardSet:
         model=model,
         output_type=FlashcardSet,
         system_prompt=SYSTEM_PROMPT,
-        # Retries improve robustness for structured output
         retries=3,
     )
     instruction = _build_instruction(user_prompt)
@@ -134,7 +130,7 @@ def _postprocess(fc: FlashcardSet) -> FlashcardSet:
         s = str(t).strip().lower()
         if s and s not in tags:
             tags.append(s)
-    # Dedup and limit tags a bit for cleanliness
+
     tags = tags[:10]
 
     clean_cards = []
@@ -143,7 +139,7 @@ def _postprocess(fc: FlashcardSet) -> FlashcardSet:
         a = (c.answer or "").strip()
         if q and a:
             clean_cards.append(type(c)(question=q, answer=a))
-    # Keep a reasonable upper bound to avoid overly long outputs
+
     clean_cards = clean_cards[:100]
 
     return type(fc)(title=title, description=desc, tags=tags, flashcards=clean_cards)
