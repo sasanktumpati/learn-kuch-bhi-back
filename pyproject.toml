@@ -1,0 +1,26 @@
+[project]
+name = "learn-kuch-bhi"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "alembic>=1.16.5",
+    "fastapi>=0.116.1",
+    "google-genai>=1.33.0",
+    "manim>=0.19.0",
+    "moviepy>=2.2.1",
+    "pydantic>=2.11.7",
+    "pydantic-ai>=1.0.1",
+    "sarvamai>=0.1.19",
+    "sqlalchemy>=2.0.43",
+]
+
+[project.scripts]
+# Run as: `uv run video-gen generate ...`
+video-gen = "app.modules.video_generator.cli:main"
+
+[tool.uv.workspace]
+members = [
+    "generated_scenes/8d0a6a58-d4cb-4ef4-bc96-5cd79913fffe",
+]
