@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from pydantic import BaseModel, Field
 from app.core.config import settings
 
-if TYPE_CHECKING:
-    from pydantic_ai import Agent
+from pydantic_ai import Agent
+from pydantic_ai._run_context import RunContext
 
 
 MODEL_NAME = "gemini-2.5-flash"

@@ -12,7 +12,7 @@ import json
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Optional, TYPE_CHECKING
+from typing import Callable, Optional
 
 from pydantic import BaseModel, Field
 
@@ -21,9 +21,8 @@ from app.modules.video_generator.templates.manim_template import (
     default_manim_skeleton,
 )
 
-if TYPE_CHECKING:
-    from pydantic_ai import Agent
-    from pydantic_ai._run_context import RunContext
+from pydantic_ai import Agent
+from pydantic_ai._run_context import RunContext
 
 MODEL_NAME = "gemini-2.5-flash"
 MANIM_LIBRARY_ID = "/manimcommunity/manim"
