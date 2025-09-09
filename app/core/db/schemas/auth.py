@@ -10,7 +10,7 @@ from app.core.db.base import Base
 
 if TYPE_CHECKING:
     from .flashcards import FlashcardSet, TopicOutline, MultiFlashcardsResult
-    from .videos import Videos, ManimConfig, ManimRenderRequest
+    from .videos import Videos, ManimConfig, ManimRenderRequest, VideoGenerationRequest
 
 
 class User(SQLAlchemyBaseUserTable[int], Base):
@@ -35,6 +35,9 @@ class User(SQLAlchemyBaseUserTable[int], Base):
     )
     manim_render_requests: Mapped[list["ManimRenderRequest"]] = relationship(
         "ManimRenderRequest", back_populates="user", cascade="all, delete-orphan"
+    )
+    video_generation_requests: Mapped[list["VideoGenerationRequest"]] = relationship(
+        "VideoGenerationRequest", back_populates="user", cascade="all, delete-orphan"
     )
 
 

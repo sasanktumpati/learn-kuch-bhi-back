@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from typing import Optional
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.modules.flashcards.generator import (
     generate_flashcards,
     generate_flashcards_sync,
@@ -19,6 +21,7 @@ from app.modules.flashcards.models.outline import (
     MultiFlashcardsResult,
     SubtopicFlashcards,
 )
+from app.core.db_services import FlashcardGenerationService
 
 
 class FlashcardsGenerator:
@@ -31,6 +34,10 @@ class FlashcardsGenerator:
     Example (sync):
         svc = FlashcardsGenerator()
         fc = svc.generate_sync("Photosynthesis for 8th graders")
+
+    Example (with database):
+        svc = FlashcardsGenerator()
+        db_set = await svc.generate_with_db(session, user_id=1, prompt="Linear Algebra")
     """
 
     def __init__(self) -> None:
@@ -44,6 +51,28 @@ class FlashcardsGenerator:
         """Synchronous wrapper for convenience and scripting."""
 
         return generate_flashcards_sync(prompt)
+
+    async def generate_with_db(
+        self,
+        session: AsyncSession,
+        user_id: int,
+        prompt: str,
+    ) -> "FlashcardSet":  # Returns DB model, not Pydantic
+        """Generate flashcards and store in database."""
+        # Import handled in service layer
+
+        # Generate the flashcards
+        pydantic_set = await self.generate(prompt)
+
+        # Store in database
+        db_service = FlashcardGenerationService(session)
+        db_set = await db_service.save_flashcard_set(
+            user_id=user_id,
+            pydantic_set=pydantic_set,
+            original_prompt=prompt,
+        )
+
+        return db_set
 
     @staticmethod
     def to_jsonable(flashcards: FlashcardSet) -> dict:
@@ -94,6 +123,29 @@ class MultiFlashcardsGenerator:
             await asyncio.gather(*tasks)
 
         return MultiFlashcardsResult(outline=outline, sets=results)
+
+    async def generate_with_db(
+        self,
+        session: AsyncSession,
+        user_id: int,
+        base_prompt: str,
+    ) -> "MultiFlashcardsResult":  # Returns DB model
+        """Generate multi-flashcards with outline and store everything in database."""
+        # Import handled in service layer
+
+        # Generate the multi-flashcards result
+        pydantic_result = await self.generate(base_prompt)
+
+        # Store in database with proper relationships
+        db_service = FlashcardGenerationService(session)
+        db_result = await db_service.save_multi_flashcards_result(
+            user_id=user_id,
+            multi_result=pydantic_result,
+            original_prompt=base_prompt,
+            concurrency_setting=self.concurrency,
+        )
+
+        return db_result
 
     def generate_sync(
         self,

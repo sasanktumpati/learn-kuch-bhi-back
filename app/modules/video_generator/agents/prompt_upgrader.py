@@ -6,7 +6,6 @@ from pydantic import BaseModel, Field
 from app.core.config import settings
 
 from pydantic_ai import Agent
-from pydantic_ai._run_context import RunContext
 
 
 MODEL_NAME = "gemini-2.5-flash"
