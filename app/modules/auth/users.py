@@ -5,7 +5,6 @@ from fastapi_users import FastAPIUsers
 from fastapi_users.authentication import (
     AuthenticationBackend,
     BearerTransport,
-    JWTStrategy,
 )
 from fastapi_users.authentication.transport import Transport
 from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
@@ -21,7 +20,6 @@ from app.core.db.base import get_session
 from app.core.db.schemas.auth import User
 
 
-# Pydantic schemas (restrict API to not set privileged flags)
 class UserRead(fa_schemas.BaseUser[int]):
     id: int
     email: EmailStr
@@ -47,10 +45,6 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):  # type: ignore[t
     reset_password_token_secret = settings.app.jwt_secret
     verification_token_secret = settings.app.jwt_secret
 
-    # Optional hooks you can customize later
-    # async def on_after_register(self, user: User, request=None):
-    #     pass
-
 
 async def get_user_manager(
     user_db: SQLAlchemyUserDatabase = Depends(get_user_db),
@@ -62,8 +56,19 @@ async def get_user_manager(
 bearer_transport = BearerTransport(tokenUrl=f"{settings.app.version}/auth/login")
 
 
-def get_jwt_strategy() -> JWTStrategy:
-    return JWTStrategy(secret=settings.app.jwt_secret, lifetime_seconds=60 * 60 * 24)
+_jwt_strategy = None
+
+
+def get_jwt_strategy():
+    global _jwt_strategy
+    if _jwt_strategy is None:
+        from app.core.jwt_strategy import RS256JWTStrategyWithKid
+
+        _jwt_strategy = RS256JWTStrategyWithKid(
+            lifetime_seconds=settings.jwt.token_lifetime_seconds,
+            key_id="v1",
+        )
+    return _jwt_strategy
 
 
 auth_backend = AuthenticationBackend(
