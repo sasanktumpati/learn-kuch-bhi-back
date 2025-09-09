@@ -23,7 +23,7 @@ from app.modules.video_generator.templates.manim_template import (
 
 if TYPE_CHECKING:
     from pydantic_ai import Agent
-    from pydantic_ai.agent import RunContext
+    from pydantic_ai._run_context import RunContext
 
 MODEL_NAME = "gemini-2.5-flash"
 MANIM_LIBRARY_ID = "/manimcommunity/manim"
