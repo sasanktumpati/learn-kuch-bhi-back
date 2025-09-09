@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import sys
 import uuid
 from pathlib import Path
 
@@ -26,6 +27,13 @@ def _print_human(result) -> None:
     print("video_path:", result.video_path)
     print("title:", result.upgraded.title)
     print("description:", result.upgraded.description)
+    # Print first few lines of any Context7 MCP tool outputs captured by pipeline
+    ctx7_snips = (result.logs or {}).get("context7_snippets") or []
+    if ctx7_snips:
+        print("\nContext7 MCP excerpts (first lines):")
+        for i, snip in enumerate(ctx7_snips, start=1):
+            head = "\n".join((snip or "").splitlines()[:5])
+            print(f"[{i}] {head}")
     if result.lint_issues:
         print("\nLint issues:")
         for i in result.lint_issues:
@@ -70,12 +78,23 @@ def main(argv: list[str] | None = None) -> int:
         help="Extra packages to install in the session (repeatable)",
     )
     g.add_argument("--json", action="store_true", help="Output JSON instead of text")
+    g.add_argument(
+        "--quiet",
+        action="store_true",
+        help="Suppress progress logs (useful for clean output)",
+    )
 
     args = parser.parse_args(argv)
     if args.cmd == "generate":
         prompt = _load_prompt(args)
         video_id = args.video_id or str(uuid.uuid4())
+
         # Run pipeline
+        # simple log printer to stderr so JSON (if any) stays on stdout
+        def _log(msg: str) -> None:
+            if not args.quiet:
+                print(msg, file=sys.stderr, flush=True)
+
         result = asyncio.run(
             run_video_pipeline(
                 prompt,
@@ -83,6 +102,8 @@ def main(argv: list[str] | None = None) -> int:
                 scene_file=args.scene_file,
                 scene_name=args.scene_name,
                 extra_packages=list(args.extra) if args.extra else None,
+                on_log=_log,
+                uv_quiet=(args.quiet or args.json),
             )
         )
 

@@ -10,7 +10,8 @@ Key Manim tips:
 - Define a class deriving from `Scene` and implement `construct(self)`.
 - Use primitives like `Circle`, `Square`, `Text`, `MathTex` and animations like `Create`, `Transform`, `FadeOut`.
 - Use `self.play(...)` to run animations and `self.add(...)` to add static objects.
-- Keep imports simple: `from manim import *` is acceptable in generated files.
+- Do not use star imports. Import only the names you use, e.g.:
+  `from manim import Scene, Text, MathTex, Create, Transform, FadeOut, BLUE`.
 - Prefer medium or low quality for quick renders: `-qm` or `-ql`.
 """.strip()
 
@@ -23,7 +24,7 @@ def default_manim_skeleton(scene_name: str = "GeneratedScene") -> str:
     """
     return f"""from __future__ import annotations
 from pydantic import BaseModel, Field
-from manim import *
+from manim import Scene, Text, Create, FadeOut, BLUE
 
 
 class SceneConfig(BaseModel):

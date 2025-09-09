@@ -77,5 +77,12 @@ class Settings(BaseSettings):
     gemini_api_key: str = Field(default=None, alias="GEMINI_API_KEY")
     openrouter_api_key: str = Field(default=None, alias="OPENROUTER_API_KEY")
 
+    # Context7 MCP (Model Context Protocol) configuration
+    context7_enabled: bool = Field(default=True, alias="CONTEXT7_ENABLED")
+    context7_mcp_url: str = Field(
+        default="https://mcp.context7.com/mcp", alias="CONTEXT7_MCP_URL"
+    )
+    context7_api_key: Optional[str] = Field(default=None, alias="CONTEXT7_API_KEY")
+
 
 settings = Settings()

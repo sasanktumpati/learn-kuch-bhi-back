@@ -79,7 +79,7 @@ What you get back:
 ## Pipeline Details
 - Prompt upgrading uses the Gemini model `google-gla:gemini-2.5-pro`; the API key comes from `settings.gemini_api_key` (via `GEMINI_API_KEY`).
 - Code generation uses a small system prompt, curated Manim tips, and a minimal Pydantic-backed skeleton (`templates/manim_template.py`).
-- Linting uses `uv run ruff check --format json`, and any issues block rendering.
+- Linting uses `uv run ruff check --output-format json`, and any issues block rendering.
 - Rendering uses `uv run manim -qm -o video scene.py <SceneName>`; the pipeline searches for the produced `video.mp4`.
 - Feedback loops:
   - Lint errors: the pipeline spawns a focused “fix” subagent per issue (one pass each), then re-lints.

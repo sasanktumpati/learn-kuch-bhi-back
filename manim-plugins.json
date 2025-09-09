@@ -1,0 +1,368 @@
+[
+    {
+        "projectName": "manim-algorithm",
+        "description": "computer science lib for manim(ce version)",
+        "pypiUrl": "https://pypi.org/project/manim-algorithm/",
+        "githubUrl": "https://github.com/sinianluoye/manim-algorithm"
+    },
+    {
+        "projectName": "manim-Astronomy",
+        "description": "A Manim extension for creating astronomical visualizations",
+        "pypiUrl": "https://pypi.org/project/manim-Astronomy/",
+        "githubUrl": "https://github.com/hassamrajpoot/manim-Astronomy"
+    },
+    {
+        "projectName": "manim-automata",
+        "description": "A Manim implementation of automata",
+        "pypiUrl": "https://pypi.org/project/manim-automata/",
+        "githubUrl": "https://github.com/SeanNelsonIO/manim-automata"
+    },
+    {
+        "projectName": "manim-beamer",
+        "description": "Emulate LATEX beamer with Python and manim-slides.",
+        "pypiUrl": "https://pypi.org/project/manim-beamer/",
+        "githubUrl": null
+    },
+    {
+        "projectName": "manim-CAD_Drawing_Utils",
+        "description": "A collection of utility functions to for creating CAD-like visuals in Manim.",
+        "pypiUrl": "https://pypi.org/project/manim-CAD_Drawing_Utils/",
+        "githubUrl": "https://github.com/GarryBGoode/Manim_CAD_Drawing_utils"
+    },
+    {
+        "projectName": "manim-chemistry",
+        "description": "Manim Chemistry is a plugin for Manim which aims to make easier the animation of molecules and other chemistry-related objects such as orbitals, bohr diagrams and more.",
+        "pypiUrl": "https://pypi.org/project/manim-chemistry/",
+        "githubUrl": null
+    },
+    {
+        "projectName": "manim-chess",
+        "description": "A plugin for animating chessboards. Includes additional features such as PGN conversion, arrows, etc.",
+        "pypiUrl": "https://pypi.org/project/manim-chess/",
+        "githubUrl": null
+    },
+    {
+        "projectName": "manim-chessrender",
+        "description": "A Manim plugin that allows you to generate scenes with chessboards with minimal setup.",
+        "pypiUrl": "https://pypi.org/project/manim-chessrender/",
+        "githubUrl": null
+    },
+    {
+        "projectName": "manim-circuit",
+        "description": "A manim-plugin that adds custom circuit VMobject(s)",
+        "pypiUrl": "https://pypi.org/project/manim-circuit/",
+        "githubUrl": "https://github.com/Mr-FuzzyPenguin/manim-circuit"
+    },
+    {
+        "projectName": "manim-code-blocks",
+        "description": "Animate highlighted blocks of code in Manim",
+        "pypiUrl": "https://pypi.org/project/manim-code-blocks/",
+        "githubUrl": null
+    },
+    {
+        "projectName": "manim-code-blocks-redux",
+        "description": "Animate highlighted blocks of code in Manim",
+        "pypiUrl": "https://pypi.org/project/manim-code-blocks-redux/",
+        "githubUrl": null
+    },
+    {
+        "projectName": "manim-course-utils",
+        "description": "Para el curso de ManimCE de MathLike",
+        "pypiUrl": "https://pypi.org/project/manim-course-utils/",
+        "githubUrl": "https://github.com/MathLike/manim-course-utils"
+    },
+    {
+        "projectName": "manim-data-structures",
+        "description": "A Manim implementation for data structures",
+        "pypiUrl": "https://pypi.org/project/manim-data-structures/",
+        "githubUrl": "https://github.com/drageelr/manim-data-structures"
+    },
+    {
+        "projectName": "manim-devanagari",
+        "description": "Devanagari plugin for manim",
+        "pypiUrl": "https://pypi.org/project/manim-devanagari/",
+        "githubUrl": null
+    },
+    {
+        "projectName": "manim-dsa",
+        "description": "A Manim plugin to animate common data structures.",
+        "pypiUrl": "https://pypi.org/project/manim-dsa/",
+        "githubUrl": null
+    },
+    {
+        "projectName": "manim-editor",
+        "description": "Editor and Presenter for Manim Generated Content.",
+        "pypiUrl": "https://pypi.org/project/manim-editor/",
+        "githubUrl": "https://github.com/ManimCommunity/manim_editor"
+    },
+    {
+        "projectName": "manim-eng",
+        "description": "A Manim CE plugin for drawing circuit diagrams (and other engineering diagrams in the future).",
+        "pypiUrl": "https://pypi.org/project/manim-eng/",
+        "githubUrl": "https://github.com/overegneered/manim-eng"
+    },
+    {
+        "projectName": "manim-extras",
+        "description": "Addons to Manim Community",
+        "pypiUrl": "https://pypi.org/project/manim-extras/",
+        "githubUrl": "https://github.com/wafarm/ManimExtras"
+    },
+    {
+        "projectName": "manim-fontawesome",
+        "description": "Font Awesome SVG's for Manim",
+        "pypiUrl": "https://pypi.org/project/manim-fontawesome/",
+        "githubUrl": "https://github.com/naveen521kk/manim-fontawesome"
+    },
+    {
+        "projectName": "manim-fonts",
+        "description": "Use Fonts from Internet With Manim.",
+        "pypiUrl": "https://pypi.org/project/manim-fonts/",
+        "githubUrl": "https://github.com/naveen521kk/manim-fonts"
+    },
+    {
+        "projectName": "manim-json",
+        "description": "null",
+        "pypiUrl": "https://pypi.org/project/manim-json/",
+        "githubUrl": null
+    },
+    {
+        "projectName": "manim-kodisc",
+        "description": "Manim plugin for Kodisc",
+        "pypiUrl": "https://pypi.org/project/manim-kodisc/",
+        "githubUrl": null
+    },
+    {
+        "projectName": "manim-lamination-builder",
+        "description": "a replacement to lamination builder that uses manim instead of the browser",
+        "pypiUrl": "https://pypi.org/project/manim-lamination-builder/",
+        "githubUrl": null
+    },
+    {
+        "projectName": "manim-livestream",
+        "description": "Package that implements livestreaming configurations for Manim.",
+        "pypiUrl": "https://pypi.org/project/manim-livestream/",
+        "githubUrl": "https://github.com/NeoPlato/manim-livestream"
+    },
+    {
+        "projectName": "manim-main-function",
+        "description": "A manim plugin that enables rendering manim scenes using the python main function.",
+        "pypiUrl": "https://pypi.org/project/manim-main-function/",
+        "githubUrl": null
+    },
+    {
+        "projectName": "manim-meshes",
+        "description": "rendering 2D and 3D Meshes with manim for displaying and educational Purposes.",
+        "pypiUrl": "https://pypi.org/project/manim-meshes/",
+        "githubUrl": "https://github.com/bmmtstb/manim-meshes"
+    },
+    {
+        "projectName": "manim-ml",
+        "description": "Machine Learning Animations in python using Manim.",
+        "pypiUrl": "https://pypi.org/project/manim-ml/",
+        "githubUrl": "https://github.com/helblazer811/ManimMachineLearning"
+    },
+    {
+        "projectName": "manim-mobject-svg",
+        "description": "Create SVG files from VMobject and VGroup in Manim",
+        "pypiUrl": "https://pypi.org/project/manim-mobject-svg/",
+        "githubUrl": "https://github.com/naveen521kk/manim-mobject-svg"
+    },
+    {
+        "projectName": "manim-nerdfont-icons",
+        "description": "null",
+        "pypiUrl": "https://pypi.org/project/manim-nerdfont-icons/",
+        "githubUrl": null
+    },
+    {
+        "projectName": "manim-neural-network",
+        "description": "A library for visualizing neural networks in Manim",
+        "pypiUrl": "https://pypi.org/project/manim-neural-network/",
+        "githubUrl": "https://github.com/JPM2002/manim-neural-network"
+    },
+    {
+        "projectName": "manim-onlinetex",
+        "description": "A Manim Plugin that renders LaTeX for Mobjects like Tex and MathTex via online services.",
+        "pypiUrl": "https://pypi.org/project/manim-onlinetex/",
+        "githubUrl": "https://github.com/ManimCommunity/manim-onlinetex"
+    },
+    {
+        "projectName": "manim-physics",
+        "description": "Support physics simulation",
+        "pypiUrl": "https://pypi.org/project/manim-physics/",
+        "githubUrl": "https://github.com/Matheart/manim-physics"
+    },
+    {
+        "projectName": "manim-play-timeline",
+        "description": "A manim plugin providing the function play_timeline to play sequences of independent animations in parallel",
+        "pypiUrl": "https://pypi.org/project/manim-play-timeline/",
+        "githubUrl": "https://github.com/abul4fia/manim-play-timeline"
+    },
+    {
+        "projectName": "manim-plugintemplate",
+        "description": "A template project to both illustrate and serve as an example for plugin creations on top of the manim (community edition) engine.",
+        "pypiUrl": "https://pypi.org/project/manim-plugintemplate/",
+        "githubUrl": "https://github.com/ManimCommunity/manim-plugintemplate"
+    },
+    {
+        "projectName": "manim-pptx",
+        "description": "",
+        "pypiUrl": "https://pypi.org/project/manim-pptx/",
+        "githubUrl": null
+    },
+    {
+        "projectName": "manim-present",
+        "description": "Configuration-based HTML presentation producer using Manim.",
+        "pypiUrl": "https://pypi.org/project/manim-present/",
+        "githubUrl": null
+    },
+    {
+        "projectName": "manim-presentation",
+        "description": "Tool for live presentations using manim",
+        "pypiUrl": "https://pypi.org/project/manim-presentation/",
+        "githubUrl": "https://github.com/galatolofederico/manim-presentation"
+    },
+    {
+        "projectName": "manim-presentations",
+        "description": "A Python framework for creating composable manim-slides presentations.",
+        "pypiUrl": "https://pypi.org/project/manim-presentations/",
+        "githubUrl": null
+    },
+    {
+        "projectName": "manim-qr-codes",
+        "description": "A Manim plugin for creating QR-codes.",
+        "pypiUrl": "https://pypi.org/project/manim-qr-codes/",
+        "githubUrl": null
+    },
+    {
+        "projectName": "manim-recorder",
+        "description": "Manim plugin for recorder",
+        "pypiUrl": "https://pypi.org/project/manim-recorder/",
+        "githubUrl": null
+    },
+    {
+        "projectName": "manim-revealjs",
+        "description": "Generate Manim animations for presentations using Reveal.js",
+        "pypiUrl": "https://pypi.org/project/manim-revealjs/",
+        "githubUrl": "https://github.com/rickdw/manim-revealjs"
+    },
+    {
+        "projectName": "manim-rhythm-graph",
+        "description": "A manim plugin for creating various shapes to demonstrate musical rhythm.",
+        "pypiUrl": "https://pypi.org/project/manim-rhythm-graph/",
+        "githubUrl": null
+    },
+    {
+        "projectName": "manim-rubikscube",
+        "description": "A Manim implementation of the classic Rubik's Cube",
+        "pypiUrl": "https://pypi.org/project/manim-rubikscube/",
+        "githubUrl": "https://github.com/WampyCakes/manim-rubikscube"
+    },
+    {
+        "projectName": "manim-sequence-diagram",
+        "description": "Manim extension to generate UML sequence diagrams",
+        "pypiUrl": "https://pypi.org/project/manim-sequence-diagram/",
+        "githubUrl": "https://github.com/foxnewsnetwork/manim-sequence-diagram"
+    },
+    {
+        "projectName": "manim-slides",
+        "description": "Tool for live presentations using manim",
+        "pypiUrl": "https://pypi.org/project/manim-slides/",
+        "githubUrl": null
+    },
+    {
+        "projectName": "manim-speech",
+        "description": "Manim plugin for adding speech to videos.",
+        "pypiUrl": "https://pypi.org/project/manim-speech/",
+        "githubUrl": "https://github.com/MtCelesteMa/manim-speech"
+    },
+    {
+        "projectName": "manim-stock-visualization",
+        "description": "Visualization of stock prices using manimCE.",
+        "pypiUrl": "https://pypi.org/project/manim-stock-visualization/",
+        "githubUrl": null
+    },
+    {
+        "projectName": "manim-studio",
+        "description": "A GUI for Manim",
+        "pypiUrl": "https://pypi.org/project/manim-studio/",
+        "githubUrl": null
+    },
+    {
+        "projectName": "manim-svg-animations",
+        "description": "",
+        "pypiUrl": "https://pypi.org/project/manim-svg-animations/",
+        "githubUrl": null
+    },
+    {
+        "projectName": "manim-themes",
+        "description": "A Manim plugin that lets you apply a iterm2 color theme to your Manim scenes.",
+        "pypiUrl": "https://pypi.org/project/manim-themes/",
+        "githubUrl": null
+    },
+    {
+        "projectName": "manim-tikz",
+        "description": "Converts Tikz markup code into an SVGMobject for use in manim.",
+        "pypiUrl": "https://pypi.org/project/manim-tikz/",
+        "githubUrl": "https://github.com/ralphieraccoon/manim-tikz"
+    },
+    {
+        "projectName": "manim-timeline",
+        "description": "A seamless and elegant timeline for rapid presentation of related literature.",
+        "pypiUrl": "https://pypi.org/project/manim-timeline/",
+        "githubUrl": null
+    },
+    {
+        "projectName": "manim-tools",
+        "description": "An extending command line tool for the manim package",
+        "pypiUrl": "https://pypi.org/project/manim-tools/",
+        "githubUrl": "http://github.com/r14r/manim+"
+    },
+    {
+        "projectName": "manim-utils",
+        "description": "",
+        "pypiUrl": "https://pypi.org/project/manim-utils/",
+        "githubUrl": null
+    },
+    {
+        "projectName": "manim-voiceover",
+        "description": "Manim plugin for all things voiceover",
+        "pypiUrl": "https://pypi.org/project/manim-voiceover/",
+        "githubUrl": null
+    },
+    {
+        "projectName": "manim-voiceover-fixed",
+        "description": "Manim plugin for all things voiceover (fork with updated ElevenLabs API)",
+        "pypiUrl": "https://pypi.org/project/manim-voiceover-fixed/",
+        "githubUrl": "https://github.com/9oelM/manim-voiceover"
+    },
+    {
+        "projectName": "manim-web",
+        "description": "Animation engine for explanatory math videos, for the web.",
+        "pypiUrl": "https://pypi.org/project/manim-web/",
+        "githubUrl": null
+    },
+    {
+        "projectName": "manim-web-physics",
+        "description": "A fork of Manim Physics for Manim Web",
+        "pypiUrl": "https://pypi.org/project/manim-web-physics/",
+        "githubUrl": "https://github.com/MathItYT/manim-physics"
+    },
+    {
+        "projectName": "manim-weighted-line",
+        "description": "Adds a weighted line object to use with network graph diagrams.",
+        "pypiUrl": "https://pypi.org/project/manim-weighted-line/",
+        "githubUrl": "https://github.com/mutable-learning/manim-weighted-line"
+    },
+    {
+        "projectName": "chanim",
+        "description": "Manim extension for making chemistry videos",
+        "pypiUrl": "https://pypi.org/project/chanim/",
+        "githubUrl": "https://github.com/raghavg123/chanim"
+    },
+    {
+        "projectName": "manim-graphing",
+        "description": "A Manim Plugin for Graphing",
+        "pypiUrl": "https://pypi.org/project/manim-graphing/",
+        "githubUrl": "https://github.com/GameDungeon/manim-graphing"
+    }
+]

@@ -22,5 +22,13 @@ video-gen = "app.modules.video_generator.cli:main"
 
 [tool.uv.workspace]
 members = [
-    "generated_scenes/8d0a6a58-d4cb-4ef4-bc96-5cd79913fffe",
+    "generated_scenes/4aace65c-d1fb-4527-9b18-70385e365f7b",
+    "generated_scenes/72e04628-d254-4686-827b-34292418e6c7",
+    "generated_scenes/debug-lint-cli",
+    "generated_scenes/demo-run-1757391625",
+    "generated_scenes/demo-run-1757391766",
+    "generated_scenes/demo-run-1757391940",
+    "generated_scenes/d7290efc-b496-428d-9f94-05482ab12d29",
+    "generated_scenes/post-lint-fix-1757392295",
+    "generated_scenes/f88a2c75-805f-43b0-be3a-5c452981eb23",
 ]

@@ -1,9 +1,12 @@
+"""End-to-end pipeline to upgrade a prompt, generate Manim code, lint, and render."""
+
 from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+import shutil
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
 from app.modules.video_generator.agents.prompt_upgrader import (
     UpgradedPrompt,
@@ -13,13 +16,15 @@ from app.modules.video_generator.agents.code_generator import (
     ManimCode,
     LintIssue,
     LintResult,
-    RenderResult,
+    PreflightResult,
     generate_code,
     fix_code_with_feedback,
     run_lint,
     run_render,
+    run_manim_preflight,
 )
 from app.modules.video_generator.utils.paths import SessionEnv
+from app.core.config import settings
 
 
 @dataclass
@@ -39,14 +44,6 @@ def _write_code(session_path: Path, file_name: str, code: str) -> Path:
     return path
 
 
-async def _lint(session_path: Path, scene_file: str, scene_name: str) -> LintResult:
-    return run_lint(session_path, scene_file)
-
-
-async def _render(session_path: Path, scene_file: str, scene_name: str) -> RenderResult:
-    return run_render(session_path, scene_file, scene_name)
-
-
 async def run_video_pipeline(
     user_prompt: str,
     video_id: str,
@@ -54,48 +51,172 @@ async def run_video_pipeline(
     scene_file: str = "scene.py",
     scene_name: str = "GeneratedScene",
     extra_packages: list[str] | None = None,
+    on_log: Optional[Callable[[str], None]] = None,
+    uv_quiet: bool = False,
+    max_lint_batch_rounds: int = 2,
+    max_post_runtime_lint_rounds: int = 2,
+    max_runtime_fix_attempts: int = 2,
 ) -> PipelineResult:
-    # Prepare session environment with manim, pydantic, ruff
+    def _log(msg: str) -> None:
+        if on_log is not None:
+            on_log(msg)
+        else:
+            print(msg, flush=True)
+
+    _log(f"[video:{video_id}] Starting pipeline")
+
     env = SessionEnv(video_id)
-    session_path = env.prepare(extra_packages=extra_packages)
+    _log("Preparing session environment (uv init + add)...")
+    session_path = env.prepare(extra_packages=extra_packages, uv_quiet=uv_quiet)
+    _log(f"Session directory: {session_path}")
 
-    # 1) Upgrade prompt
+    if settings.context7_enabled and settings.context7_api_key:
+        _log(
+            f"Context7 MCP: enabled at {settings.context7_mcp_url} (tool prefix 'ctx7')"
+        )
+    else:
+        _log("Context7 MCP: disabled or missing API key")
+
+    _log("Upgrading prompt with Gemini...")
     upgraded = await upgrade_prompt(user_prompt)
+    _log(f"Upgraded prompt title: {upgraded.title}")
 
-    # 2) Generate initial code
+    _log("Generating initial Manim code...")
+    ctx7_snippets: list[str] = []
+
+    def _ctx7_log(snippet: str) -> None:
+        ctx7_snippets.append(snippet)
+        _log("[ctx7] " + (" ".join(snippet.splitlines()[:1]) if snippet else "(empty)"))
+
     code_resp: ManimCode = await generate_code(
         f"Title: {upgraded.title}\nDescription: {upgraded.description}\nConstraints: {upgraded.constraints}",
         scene_name=scene_name,
+        on_mcp_snippet=_ctx7_log,
     )
-    _write_code(session_path, scene_file, code_resp.code)
+    path_written = _write_code(session_path, scene_file, code_resp.code)
+    _log(f"Wrote scene to {path_written}")
 
-    # 3) Lint (mandatory) and fix loop per issue (one attempt each)
-    lint = await _lint(session_path, scene_file, scene_name)
+    _log("Running Ruff lint...")
+    lint = run_lint(session_path, scene_file)
+    _log("Ruff: clean" if lint.ok else f"Ruff: {len(lint.issues)} issue(s) detected")
+    if not lint.ok:
+        raw_head = "\n".join((lint.raw or "").splitlines()[:20]).strip()
+        if raw_head:
+            _log("Ruff raw output (head):\n" + raw_head)
     fixed_any = False
     if not lint.ok and lint.issues:
-        for issue in lint.issues:
-            feedback = json.dumps(issue.model_dump(), indent=2)
+        _log("Ruff issues (batch):")
+        for i in lint.issues:
+            _log(f"- {i.filepath}:{i.line}:{i.column} {i.code} {i.message}")
+
+        async def _batch_fix(
+            current_lint: LintResult, *, label: str, rounds: int
+        ) -> LintResult:
+            nonlocal fixed_any
+            lint_local = current_lint
+            for round_num in range(1, rounds + 1):
+                issues_json = json.dumps(
+                    [i.model_dump() for i in lint_local.issues], indent=2
+                )
+                _log(
+                    f"Fixing {len(lint_local.issues)} {label} issues in batch (round {round_num}/{rounds})..."
+                )
+                code_resp = await fix_code_with_feedback(
+                    current_code=(session_path / scene_file).read_text(
+                        encoding="utf-8"
+                    ),
+                    scene_name=scene_name,
+                    upgraded_prompt=f"{upgraded.title}\n{upgraded.description}",
+                    feedback=(
+                        "Fix ALL of the following Ruff issues in one pass.\n"
+                        "Do not introduce star imports. Keep the same scene class name.\n"
+                        f"Issues (JSON array):\n{issues_json}\n"
+                    ),
+                    on_mcp_snippet=_ctx7_log,
+                )
+                _write_code(session_path, scene_file, code_resp.code)
+                fixed_any = True
+
+                _log("Re-running Ruff after batch fixes...")
+                lint_local = run_lint(session_path, scene_file)
+                _log(
+                    "Ruff: clean"
+                    if lint_local.ok
+                    else f"Ruff: {len(lint_local.issues)} issue(s) remain"
+                )
+                if lint_local.ok or not lint_local.issues:
+                    break
+            return lint_local
+
+        lint = await _batch_fix(lint, label="lint", rounds=max_lint_batch_rounds)
+
+        if not lint.ok:
+            _log(
+                "Lint still failing after batch fixes; regenerating code with a fresh agent..."
+            )
+            regen_feedback = (
+                "Regenerate the entire Manim file from scratch.\n"
+                "Satisfy all Ruff lint rules. Use explicit imports only.\n"
+                "Avoid LaTeX (MathTex/Tex) if a LaTeX compiler is unavailable.\n"
+                "Keep the scene class name identical and code self-contained.\n"
+            )
+            code_resp = await generate_code(
+                f"Title: {upgraded.title}\nDescription: {upgraded.description}\nConstraints: {upgraded.constraints}\n{regen_feedback}",
+                scene_name=scene_name,
+                on_mcp_snippet=_ctx7_log,
+            )
+            _write_code(session_path, scene_file, code_resp.code)
+            _log("Re-running Ruff after regeneration...")
+            lint = run_lint(session_path, scene_file)
+            _log(
+                "Ruff: clean"
+                if lint.ok
+                else f"Ruff: {len(lint.issues)} issue(s) remain after regeneration"
+            )
+
+    runtime_errors: list[str] = []
+    video_path: Optional[str] = None
+    if lint.ok:
+        _log("Preflight: checking Manim import inside session...")
+        pre: PreflightResult = run_manim_preflight(session_path)
+        if pre.ok:
+            head = "\n".join((pre.stdout or "").splitlines()[:3]).strip()
+            _log(f"Preflight OK (manim version): {head or 'unknown'}")
+        else:
+            err_head = "\n".join((pre.stderr or pre.stdout or "").splitlines()[:8])
+            _log("Preflight FAILED. First lines:\n" + err_head)
+
+        if shutil.which("latex") is None:
+            _log(
+                "LaTeX not found on PATH. Rewriting code to avoid MathTex/Tex usage..."
+            )
             code_resp = await fix_code_with_feedback(
                 current_code=(session_path / scene_file).read_text(encoding="utf-8"),
                 scene_name=scene_name,
                 upgraded_prompt=f"{upgraded.title}\n{upgraded.description}",
-                feedback=f"Fix this single lint issue only: {feedback}",
+                feedback=(
+                    "The execution environment does not have a LaTeX compiler ('latex').\n"
+                    "Remove all uses of MathTex/Tex and any LaTeX templating.\n"
+                    "Replace them with Text using Unicode characters (e.g., '90°', '45°').\n"
+                    "Keep the same visual intent and positioning as much as possible.\n"
+                    "Ensure explicit imports only (no star imports)."
+                ),
+                on_mcp_snippet=_ctx7_log,
             )
             _write_code(session_path, scene_file, code_resp.code)
-            fixed_any = True
-        # Re-run lint after attempting each issue once
-        lint = await _lint(session_path, scene_file, scene_name)
+            _log("Code rewritten to avoid LaTeX; re-running Ruff...")
+            lint = run_lint(session_path, scene_file)
+            _log(
+                "Ruff: clean" if lint.ok else "Ruff: issues remain after LaTeX rewrite"
+            )
 
-    # 4) Render (only if lint clean)
-    runtime_errors: list[str] = []
-    video_path: Optional[str] = None
-    if lint.ok:
-        render_res = await _render(session_path, scene_file, scene_name)
+        _log("Rendering with Manim (this can take a while)...")
+        render_res = run_render(session_path, scene_file, scene_name)
         if render_res.ok and render_res.video_path:
             video_path = render_res.video_path
+            _log(f"Render complete: {video_path}")
         else:
-            # Runtime error -> spawn single-issue fix agents sequentially, one pass per error chunk
-            # Keep the stderr as feedback; split into segments by lines containing 'ERROR' or 'Traceback'
+            _log("Render failed; attempting focused fixes from error output...")
             stderr = render_res.stderr or ""
             chunks: list[str] = []
             buf: list[str] = []
@@ -108,14 +229,21 @@ async def run_video_pipeline(
             if buf:
                 chunks.append("\n".join(buf))
 
-            # If no chunks detected, use whole stderr once
-            if not chunks and stderr:
-                chunks = [stderr]
+            if not chunks:
+                head = "\n".join(
+                    (render_res.stderr or render_res.stdout or "").splitlines()[:12]
+                )
+                if head:
+                    _log("Render failed. Output excerpt:\n" + head)
+                if render_res.stderr:
+                    chunks = [render_res.stderr]
 
+            attempts = 0
             for idx, chunk in enumerate(chunks or [stderr]):
                 if not chunk:
                     continue
                 runtime_errors.append(chunk)
+                _log(f"Fixing runtime error segment {idx + 1}/{len(chunks)}...")
                 code_resp = await fix_code_with_feedback(
                     current_code=(session_path / scene_file).read_text(
                         encoding="utf-8"
@@ -123,24 +251,81 @@ async def run_video_pipeline(
                     scene_name=scene_name,
                     upgraded_prompt=f"{upgraded.title}\n{upgraded.description}",
                     feedback=f"Runtime error segment {idx + 1}:\n{chunk}\nPlease fix only this problem, keep others intact.",
+                    on_mcp_snippet=_ctx7_log,
                 )
                 _write_code(session_path, scene_file, code_resp.code)
-                # Lint again before re-rendering
-                lint = await _lint(session_path, scene_file, scene_name)
+
+                _log("Re-running Ruff after runtime fix...")
+                lint = run_lint(session_path, scene_file)
                 if not lint.ok:
-                    break
-                # Try render again after each fix
-                render_res = await _render(session_path, scene_file, scene_name)
+                    _log("Ruff not clean after fix; attempting batch lint fixes...")
+
+                    raw_head = "\n".join((lint.raw or "").splitlines()[:20]).strip()
+                    if raw_head:
+                        _log("Ruff raw output (head):\n" + raw_head)
+
+                    if lint.issues:
+                        _log("Ruff issues (post-runtime batch):")
+                        for i in lint.issues:
+                            _log(
+                                f"- {i.filepath}:{i.line}:{i.column} {i.code} {i.message}"
+                            )
+                        lint = await _batch_fix(
+                            lint,
+                            label="post-runtime lint",
+                            rounds=max_post_runtime_lint_rounds,
+                        )
+
+                    if not lint.ok:
+                        _log("Ruff still not clean; aborting further renders.")
+                        break
+
+                _log("Re-rendering after fix...")
+                render_res = run_render(session_path, scene_file, scene_name)
                 if render_res.ok and render_res.video_path:
                     video_path = render_res.video_path
+                    _log(f"Render complete: {video_path}")
                     break
+                attempts += 1
+                if attempts >= max_runtime_fix_attempts:
+                    _log(
+                        "Still failing after multiple runtime fix attempts; regenerating code with a fresh agent..."
+                    )
+                    regen_feedback = (
+                        "Regenerate the entire Manim file from scratch.\n"
+                        "Address prior runtime errors and keep imports explicit.\n"
+                        "Avoid LaTeX (MathTex/Tex) if a LaTeX compiler is unavailable.\n"
+                        "Keep the scene class name identical and code self-contained.\n"
+                    )
+                    code_resp = await generate_code(
+                        f"Title: {upgraded.title}\nDescription: {upgraded.description}\nConstraints: {upgraded.constraints}\n{regen_feedback}",
+                        scene_name=scene_name,
+                        on_mcp_snippet=_ctx7_log,
+                    )
+                    _write_code(session_path, scene_file, code_resp.code)
+                    _log("Re-running Ruff after regeneration...")
+                    lint = run_lint(session_path, scene_file)
+                    if not lint.ok:
+                        _log("Ruff not clean after regeneration; aborting.")
+                        break
+                    _log("Re-rendering after regeneration...")
+                    render_res = run_render(session_path, scene_file, scene_name)
+                    if render_res.ok and render_res.video_path:
+                        video_path = render_res.video_path
+                        _log(f"Render complete: {video_path}")
+                        break
+                    else:
+                        _log("Render still failing after regeneration; aborting.")
+                        break
 
     ok = bool(video_path)
     logs = {
         "session_path": str(session_path),
         "lint_ok": lint.ok,
         "fixed_any": fixed_any,
+        "context7_snippets": ctx7_snippets,
     }
+    _log(f"[video:{video_id}] Finished with status: {'ok' if ok else 'failed'}")
     return PipelineResult(
         ok=ok,
         video_path=video_path,

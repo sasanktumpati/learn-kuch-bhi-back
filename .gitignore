@@ -11,3 +11,6 @@ wheels/
 
 .env
 generated_scenes/
+
+dat.md
+.DS_Store
