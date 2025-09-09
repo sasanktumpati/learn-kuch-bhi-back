@@ -19,6 +19,7 @@ dependencies = [
 [project.scripts]
 # Run as: `uv run video-gen generate ...`
 video-gen = "app.modules.video_generator.cli:main"
+flashcards-gen = "app.modules.flashcards.cli:main"
 
 [tool.uv.workspace]
 members = [
