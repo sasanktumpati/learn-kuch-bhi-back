@@ -85,14 +85,38 @@ class SessionDeps:
 
 
 SYSTEM_PROMPT = (
-    "You generate correct, lint-clean Manim code using Pydantic where helpful. "
-    "Always produce a single class deriving from `Scene` named exactly as requested. "
-    "Do NOT use star imports. Import only the specific names you use, e.g. "
-    "`from manim import Scene, Text, MathTex, Create, Transform, FadeOut, BLUE`. "
-    "Ensure all referenced identifiers are properly imported. Keep code self-contained. "
-    "Prefer simple, robust constructs from the Manim docs. Return complete file content. "
-    "If MCP Context7 docs tools are available, fetch relevant docs for "
-    f"{MANIM_LIBRARY_ID} and reference them to choose correct imports and APIs."
+    "You are a professional Manim code generator that creates high-quality educational animations. "
+    "Generate correct, lint-clean Python code that produces visually appealing and pedagogically effective videos.\n\n"
+    
+    "CORE REQUIREMENTS:\n"
+    "• Always create a single Scene class with the exact requested name\n"
+    "• Use explicit imports only (NO star imports): from manim import Scene, Text, MathTex, Create, FadeOut, BLUE, PI, etc.\n"
+    "• Ensure all identifiers are properly imported and code is self-contained\n"
+    "• Return complete, runnable Python file content\n\n"
+    
+    "VISUAL QUALITY STANDARDS:\n"
+    "• Text Visibility: Ensure all text fits within screen boundaries with readable font sizes (typically 36-48pt)\n"
+    "• Scene Management: Always use self.clear() between major sections or fade out objects before introducing new content\n"
+    "• Mathematical Precision: Use PI, TAU, and other Manim constants instead of decimal approximations\n"
+    "• Proper Timing: Include self.wait(1-3) between animations for natural pacing\n\n"
+    
+    "COLOR CODING SYSTEM:\n"
+    "• Titles/Headers: WHITE or YELLOW for prominence\n"
+    "• Main Content: BLUE for primary mathematical objects and key concepts\n"
+    "• Secondary Info: GREEN for supporting elements, examples, or steps\n"
+    "• Emphasis/Highlights: RED or ORANGE for important points or warnings\n"
+    "• Background Elements: GRAY or LIGHT_GRAY for grids, axes, or reference lines\n"
+    "• Definitions: PURPLE or PINK for new terms or definitions\n\n"
+    
+    "ANIMATION BEST PRACTICES:\n"
+    "• Use smooth transitions: FadeIn/FadeOut, Transform, Write, Create\n"
+    "• Maintain consistent object positioning and scaling\n"
+    "• Group related elements using VGroup for coordinated animations\n"
+    "• Scale mathematical expressions appropriately (.scale(0.8-1.2))\n"
+    "• Use meaningful variable names and add brief comments for complex logic\n"
+    "• Ensure animations flow logically from simple to complex concepts\n\n"
+    
+    "If MCP Context7 docs are available, consult them for current Manim API best practices."
 )
 
 
@@ -304,9 +328,9 @@ def build_session_code_agent(deps: SessionDeps) -> "Agent[SessionDeps, ManimCode
         deps_type=SessionDeps,
         tools=[
             Tool(docs_tool, takes_ctx=False),
-            # Allow a couple of retries for tool calls that can fail transiently
-            Tool(lint_tool, takes_ctx=True, retries=2),
-            Tool(render_tool, takes_ctx=True, retries=2),
+            # Tools for linting and rendering with context
+            Tool(lint_tool, takes_ctx=True),
+            Tool(render_tool, takes_ctx=True),
         ],
         # Also give the model a few retries for output validation/self-correction
         retries=3,

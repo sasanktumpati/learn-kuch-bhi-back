@@ -16,3 +16,5 @@ dat.md
 .DS_Store
 videos/
 jwt_rsa_key.pem
+
+server/

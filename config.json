@@ -1,0 +1,32 @@
+{
+    "is_app_enabled": true,
+    "versions": {
+        "android": {
+            "version": "1.0.0",
+            "buildNumber": "1",
+            "minSupportedVersion": "1.0.0",
+            "minSupportedBuildNumber": "1",
+            "url": "https://example.com/download/android",
+            "forceUpdateifLessThanVersion": "1.0.0"
+        },
+        "ios": {
+            "version": "1.0.0",
+            "buildNumber": "1",
+            "minSupportedVersion": "1.0.0",
+            "minSupportedBuildNumber": "1",
+            "url": "https://example.com/download/ios",
+            "forceUpdateifLessThanVersion": "1.0.0"
+        }
+    },
+    "screens": {
+        "food_stalls": {
+            "enabled": true
+        },
+        "store": {
+            "enabled": true
+        },
+        "matched": {
+            "enabled": true
+        }
+    }
+}
