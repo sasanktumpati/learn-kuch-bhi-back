@@ -24,7 +24,7 @@ from app.modules.video_generator.templates.manim_template import (
 from pydantic_ai import Agent, ModelRetry
 from pydantic_ai._run_context import RunContext
 
-MODEL_NAME = "gemini-2.5-flash"
+MODEL_NAME = "gemini-2.5-pro"
 MANIM_LIBRARY_ID = "/manimcommunity/manim"
 PYDANTIC_AI_LIBRARY_ID = "/pydantic/pydantic-ai"
 
