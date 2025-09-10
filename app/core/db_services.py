@@ -170,6 +170,26 @@ class FlashcardGenerationService:
     def __init__(self, session: AsyncSession):
         self.session = session
 
+    async def create_multi_result_pending(
+        self,
+        *,
+        user_id: int,
+        original_prompt: str,
+        concurrency_setting: int = 6,
+    ) -> MultiFlashcardsResult:
+        """Create a multi generation record with PENDING status and empty outline."""
+        db_multi = MultiFlashcardsResult(
+            user_id=user_id,
+            outline={},
+            original_prompt=original_prompt,
+            concurrency_setting=concurrency_setting,
+            status=FlashcardGenerationStatus.PENDING,
+        )
+        self.session.add(db_multi)
+        await self.session.commit()
+        await self.session.refresh(db_multi)
+        return db_multi
+
     async def create_multi_result_processing(
         self,
         *,

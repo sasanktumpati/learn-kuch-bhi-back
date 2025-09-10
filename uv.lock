@@ -9,6 +9,15 @@ resolution-markers = [
 [manifest]
 members = [
     "245febc2-c146-485b-bef1-fd939ee6212a",
+    "2d909b2b-4671-4067-892d-69e6531b4892",
+    "7ecd7525-cb52-43d4-853b-3e7106097910",
+    "81ff6e9e-a62c-4c67-80cf-59846de6643f",
+    "9329095f-11b7-444e-a976-7660988c363a",
+    "9f29ed4e-82c8-4c8b-9ae7-129fe9982802",
+    "a1021200-6c1e-46c5-add0-b8c6fe002438",
+    "c9fda5df-35ba-4a8d-b122-35bf895940d0",
+    "d2573d31-0b18-45a3-a947-1863a78a0db7",
+    "fe30f626-1ae1-4bc4-a6cb-2e672a49d663",
     "learn-kuch-bhi",
 ]
 
@@ -16,6 +25,96 @@ members = [
 name = "245febc2-c146-485b-bef1-fd939ee6212a"
 version = "0.1.0"
 source = { virtual = "generated_scenes/245febc2-c146-485b-bef1-fd939ee6212a" }
+dependencies = [
+    { name = "manim" },
+    { name = "pydantic" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "manim", specifier = ">=0.19.0" },
+    { name = "pydantic", specifier = ">=2.11.7" },
+    { name = "ruff", specifier = ">=0.12.12" },
+]
+
+[[package]]
+name = "2d909b2b-4671-4067-892d-69e6531b4892"
+version = "0.1.0"
+source = { virtual = "generated_scenes/2d909b2b-4671-4067-892d-69e6531b4892" }
+dependencies = [
+    { name = "manim" },
+    { name = "pydantic" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "manim", specifier = ">=0.19.0" },
+    { name = "pydantic", specifier = ">=2.11.7" },
+    { name = "ruff", specifier = ">=0.12.12" },
+]
+
+[[package]]
+name = "7ecd7525-cb52-43d4-853b-3e7106097910"
+version = "0.1.0"
+source = { virtual = "generated_scenes/7ecd7525-cb52-43d4-853b-3e7106097910" }
+dependencies = [
+    { name = "manim" },
+    { name = "pydantic" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "manim", specifier = ">=0.19.0" },
+    { name = "pydantic", specifier = ">=2.11.7" },
+    { name = "ruff", specifier = ">=0.12.12" },
+]
+
+[[package]]
+name = "81ff6e9e-a62c-4c67-80cf-59846de6643f"
+version = "0.1.0"
+source = { virtual = "generated_scenes/81ff6e9e-a62c-4c67-80cf-59846de6643f" }
+dependencies = [
+    { name = "manim" },
+    { name = "pydantic" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "manim", specifier = ">=0.19.0" },
+    { name = "pydantic", specifier = ">=2.11.7" },
+    { name = "ruff", specifier = ">=0.12.12" },
+]
+
+[[package]]
+name = "9329095f-11b7-444e-a976-7660988c363a"
+version = "0.1.0"
+source = { virtual = "generated_scenes/9329095f-11b7-444e-a976-7660988c363a" }
+
+[[package]]
+name = "9f29ed4e-82c8-4c8b-9ae7-129fe9982802"
+version = "0.1.0"
+source = { virtual = "generated_scenes/9f29ed4e-82c8-4c8b-9ae7-129fe9982802" }
+dependencies = [
+    { name = "manim" },
+    { name = "pydantic" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "manim", specifier = ">=0.19.0" },
+    { name = "pydantic", specifier = ">=2.11.7" },
+    { name = "ruff", specifier = ">=0.12.12" },
+]
+
+[[package]]
+name = "a1021200-6c1e-46c5-add0-b8c6fe002438"
+version = "0.1.0"
+source = { virtual = "generated_scenes/a1021200-6c1e-46c5-add0-b8c6fe002438" }
 dependencies = [
     { name = "manim" },
     { name = "pydantic" },
@@ -389,6 +488,23 @@ wheels = [
 ]
 
 [[package]]
+name = "c9fda5df-35ba-4a8d-b122-35bf895940d0"
+version = "0.1.0"
+source = { virtual = "generated_scenes/c9fda5df-35ba-4a8d-b122-35bf895940d0" }
+dependencies = [
+    { name = "manim" },
+    { name = "pydantic" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "manim", specifier = ">=0.19.0" },
+    { name = "pydantic", specifier = ">=2.11.7" },
+    { name = "ruff", specifier = ">=0.12.12" },
+]
+
+[[package]]
 name = "cachetools"
 version = "5.5.2"
 source = { registry = "https://pypi.org/simple" }
@@ -618,6 +734,23 @@ wheels = [
 ]
 
 [[package]]
+name = "d2573d31-0b18-45a3-a947-1863a78a0db7"
+version = "0.1.0"
+source = { virtual = "generated_scenes/d2573d31-0b18-45a3-a947-1863a78a0db7" }
+dependencies = [
+    { name = "manim" },
+    { name = "pydantic" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "manim", specifier = ">=0.19.0" },
+    { name = "pydantic", specifier = ">=2.11.7" },
+    { name = "ruff", specifier = ">=0.12.12" },
+]
+
+[[package]]
 name = "decorator"
 version = "5.2.1"
 source = { registry = "https://pypi.org/simple" }
@@ -741,6 +874,23 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/d0/12/9478c28a2ac4fcc10ad9488dd3dcd5fac1ef550c3022c57840330e7cec4b/fastavro-1.12.0-cp313-cp313t-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:1148263931f6965e1942cf670f146148ca95b021ae7b7e1f98bf179f1c26cc58", size = 3453000, upload-time = "2025-07-31T15:17:38.875Z" },
     { url = "https://files.pythonhosted.org/packages/00/32/a5c8b3af9561c308c8c27da0be998b6237a47dbbdd8d5499f02731bd4073/fastavro-1.12.0-cp313-cp313t-musllinux_1_2_aarch64.whl", hash = "sha256:4099e0f6fb8a55f59891c0aed6bfa90c4d20a774737e5282c74181b4703ea0cb", size = 3383233, upload-time = "2025-07-31T15:17:40.833Z" },
     { url = "https://files.pythonhosted.org/packages/42/a0/f6290f3f8059543faf3ef30efbbe9bf3e4389df881891136cd5fb1066b64/fastavro-1.12.0-cp313-cp313t-musllinux_1_2_x86_64.whl", hash = "sha256:10c586e9e3bab34307f8e3227a2988b6e8ac49bff8f7b56635cf4928a153f464", size = 3402032, upload-time = "2025-07-31T15:17:42.958Z" },
+]
+
+[[package]]
+name = "fe30f626-1ae1-4bc4-a6cb-2e672a49d663"
+version = "0.1.0"
+source = { virtual = "generated_scenes/fe30f626-1ae1-4bc4-a6cb-2e672a49d663" }
+dependencies = [
+    { name = "manim" },
+    { name = "pydantic" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "manim", specifier = ">=0.19.0" },
+    { name = "pydantic", specifier = ">=2.11.7" },
+    { name = "ruff", specifier = ">=0.12.12" },
 ]
 
 [[package]]

@@ -11,6 +11,7 @@ from app.core.db.base import Base
 if TYPE_CHECKING:
     from .flashcards import FlashcardSet, MultiFlashcardsResult
     from .videos import Videos, ManimConfig, ManimRenderRequest, VideoGenerationRequest
+    from .user_profile import UserProfile
 
 
 class User(SQLAlchemyBaseUserTable[int], Base):
@@ -35,6 +36,9 @@ class User(SQLAlchemyBaseUserTable[int], Base):
     )
     video_generation_requests: Mapped[list["VideoGenerationRequest"]] = relationship(
         "VideoGenerationRequest", back_populates="user", cascade="all, delete-orphan"
+    )
+    profile: Mapped["UserProfile"] = relationship(
+        "UserProfile", back_populates="user", cascade="all, delete-orphan", uselist=False
     )
 
 
