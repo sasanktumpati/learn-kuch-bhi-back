@@ -50,11 +50,9 @@ class UserProfile(Base):
     )
     first_name: Mapped[str] = mapped_column(String, nullable=False)
     last_name: Mapped[str] = mapped_column(String, nullable=False)
-    gender: Mapped[Gender] = mapped_column(
-        Enum(Gender), nullable=True
-    )
+    gender: Mapped[Gender] = mapped_column(Enum(Gender), nullable=True)
     age: Mapped[int] = mapped_column(Integer, nullable=True)
-    
+
     # Education-related fields
     education_level: Mapped[EducationLevel] = mapped_column(
         Enum(EducationLevel), nullable=True
@@ -62,19 +60,21 @@ class UserProfile(Base):
     institution: Mapped[str] = mapped_column(String, nullable=True)
     field_of_study: Mapped[str] = mapped_column(String, nullable=True)
     graduation_year: Mapped[int] = mapped_column(Integer, nullable=True)
-    
+
     # Learning preferences
     learning_style: Mapped[LearningStyle] = mapped_column(
         Enum(LearningStyle), nullable=True
     )
-    subjects_of_interest: Mapped[str] = mapped_column(String, nullable=True)  # Comma-separated
+    subjects_of_interest: Mapped[str] = mapped_column(
+        String, nullable=True
+    )  # Comma-separated
     learning_goals: Mapped[str] = mapped_column(String, nullable=True)
-    
+
     # Profile metadata
     bio: Mapped[str] = mapped_column(String, nullable=True)
     location: Mapped[str] = mapped_column(String, nullable=True)
     timezone: Mapped[str] = mapped_column(String, nullable=True)
-    
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False,
@@ -95,7 +95,7 @@ class UserProfile(Base):
 
 __all__ = [
     "Gender",
-    "EducationLevel", 
+    "EducationLevel",
     "LearningStyle",
     "UserProfile",
 ]

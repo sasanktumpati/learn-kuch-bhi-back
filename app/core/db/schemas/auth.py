@@ -38,7 +38,10 @@ class User(SQLAlchemyBaseUserTable[int], Base):
         "VideoGenerationRequest", back_populates="user", cascade="all, delete-orphan"
     )
     profile: Mapped["UserProfile"] = relationship(
-        "UserProfile", back_populates="user", cascade="all, delete-orphan", uselist=False
+        "UserProfile",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        uselist=False,
     )
 
 

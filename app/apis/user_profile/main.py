@@ -27,26 +27,25 @@ async def get_or_create_profile(
         select(UserProfile).where(UserProfile.user_id == user_id)
     )
     profile = result.scalar_one_or_none()
-    
+
     if not profile:
         # Create profile with provided data or defaults
-        profile_dict = profile_data.model_dump(exclude_unset=True) if profile_data else {}
-        
-        # Set default values for required fields if not provided
-        if 'first_name' not in profile_dict:
-            profile_dict['first_name'] = 'User'
-        if 'last_name' not in profile_dict:
-            profile_dict['last_name'] = f'{user_id}'
-        
-        profile = UserProfile(
-            user_id=user_id,
-            **profile_dict
+        profile_dict = (
+            profile_data.model_dump(exclude_unset=True) if profile_data else {}
         )
-        
+
+        # Set default values for required fields if not provided
+        if "first_name" not in profile_dict:
+            profile_dict["first_name"] = "User"
+        if "last_name" not in profile_dict:
+            profile_dict["last_name"] = f"{user_id}"
+
+        profile = UserProfile(user_id=user_id, **profile_dict)
+
         session.add(profile)
         await session.commit()
         await session.refresh(profile)
-    
+
     return profile
 
 
@@ -66,13 +65,13 @@ async def create_or_update_profile(
         select(UserProfile).where(UserProfile.user_id == current_user.id)
     )
     existing_profile = result.scalar_one_or_none()
-    
+
     if existing_profile:
         # Update existing profile
         update_data = profile_data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
             setattr(existing_profile, field, value)
-        
+
         await session.commit()
         await session.refresh(existing_profile)
         return UserProfileRead.model_validate(existing_profile)

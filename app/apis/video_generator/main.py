@@ -179,8 +179,12 @@ async def request_events(
                             "status": last_status,
                             "request_id": r.id,
                             "video_uuid": r.video_id,
-                            "started_at": r.started_at.isoformat() if r.started_at else None,
-                            "completed_at": r.completed_at.isoformat() if r.completed_at else None,
+                            "started_at": r.started_at.isoformat()
+                            if r.started_at
+                            else None,
+                            "completed_at": r.completed_at.isoformat()
+                            if r.completed_at
+                            else None,
                         }
                         yield _sse("status", payload)
 
@@ -222,7 +226,9 @@ async def list_videos(
     from app.core.db.schemas.videos import Videos as DBVideo
 
     rows = await session.execute(
-        select(DBVideo).where(DBVideo.user_id == user.id).order_by(DBVideo.uploaded_at.desc())
+        select(DBVideo)
+        .where(DBVideo.user_id == user.id)
+        .order_by(DBVideo.uploaded_at.desc())
     )
     videos = rows.scalars().all()
     out: list[VideoRead] = []
@@ -287,7 +293,9 @@ async def list_requests(
     from app.core.db.schemas.videos import VideoGenerationRequest as DBRequest
 
     rows = await session.execute(
-        select(DBRequest).where(DBRequest.user_id == user.id).order_by(DBRequest.created_at.desc())
+        select(DBRequest)
+        .where(DBRequest.user_id == user.id)
+        .order_by(DBRequest.created_at.desc())
     )
     reqs = rows.scalars().all()
     out: list[RequestRead] = []

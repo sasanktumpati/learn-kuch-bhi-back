@@ -164,12 +164,12 @@ async def run_video_pipeline(
                 on_mcp_snippet=_ctx7_log,
             )
             _write_code(session_path, scene_file, code_resp.code)
-            
+
             # Comprehensive fix loop after initial regeneration
             _log("Running comprehensive lint fix loop after initial regeneration...")
             initial_regen_attempts = 0
             max_initial_regen_attempts = 2
-            
+
             while initial_regen_attempts < max_initial_regen_attempts:
                 _log("Re-running Ruff after regeneration...")
                 lint = run_lint(session_path, scene_file)
@@ -187,7 +187,9 @@ async def run_video_pipeline(
                         break
                     initial_regen_attempts += 1
                     if initial_regen_attempts < max_initial_regen_attempts:
-                        _log("Attempting one more regeneration to fix remaining lint issues...")
+                        _log(
+                            "Attempting one more regeneration to fix remaining lint issues..."
+                        )
                         code_resp = await generate_code(
                             f"Title: {upgraded.title}\nDescription: {upgraded.description}\nConstraints: {upgraded.constraints}\n{regen_feedback}\nFocus on fixing lint issues from previous attempt.",
                             scene_name=scene_name,
@@ -327,31 +329,35 @@ async def run_video_pipeline(
                         on_mcp_snippet=_ctx7_log,
                     )
                     _write_code(session_path, scene_file, code_resp.code)
-                    
+
                     # Comprehensive fix loop after regeneration
                     _log("Running comprehensive fix loop after regeneration...")
                     regen_attempts = 0
                     max_regen_attempts = 3
-                    
+
                     while regen_attempts < max_regen_attempts:
                         # Check and fix lint issues
                         _log("Re-running Ruff after regeneration...")
                         lint = run_lint(session_path, scene_file)
                         if not lint.ok and lint.issues:
-                            _log(f"Ruff: {len(lint.issues)} issue(s) found after regeneration")
+                            _log(
+                                f"Ruff: {len(lint.issues)} issue(s) found after regeneration"
+                            )
                             lint = await _batch_fix(
                                 lint,
                                 label="post-regeneration lint",
                                 rounds=max_lint_batch_rounds,
                             )
                             if not lint.ok:
-                                _log("Lint still failing after regeneration fixes; trying once more...")
+                                _log(
+                                    "Lint still failing after regeneration fixes; trying once more..."
+                                )
                                 regen_attempts += 1
                                 continue
                         elif not lint.ok:
                             _log("Ruff not clean after regeneration; aborting.")
                             break
-                            
+
                         # Try rendering
                         _log("Re-rendering after regeneration and fixes...")
                         render_res = run_render(session_path, scene_file, scene_name)
@@ -361,11 +367,15 @@ async def run_video_pipeline(
                             break
                         else:
                             # Handle render errors with targeted fixes
-                            _log("Render still failing after regeneration; attempting targeted fixes...")
+                            _log(
+                                "Render still failing after regeneration; attempting targeted fixes..."
+                            )
                             stderr = render_res.stderr or ""
                             if stderr and regen_attempts < max_regen_attempts - 1:
                                 code_resp = await fix_code_with_feedback(
-                                    current_code=(session_path / scene_file).read_text(encoding="utf-8"),
+                                    current_code=(session_path / scene_file).read_text(
+                                        encoding="utf-8"
+                                    ),
                                     scene_name=scene_name,
                                     upgraded_prompt=f"{upgraded.title}\n{upgraded.description}",
                                     feedback=f"Post-regeneration render error:\n{stderr[:1000]}\nFix this specific issue while maintaining code quality.",
@@ -374,10 +384,14 @@ async def run_video_pipeline(
                                 _write_code(session_path, scene_file, code_resp.code)
                                 regen_attempts += 1
                             else:
-                                _log("Render still failing after all regeneration attempts; aborting.")
+                                _log(
+                                    "Render still failing after all regeneration attempts; aborting."
+                                )
                                 break
-                    
-                    if regen_attempts >= max_regen_attempts and not (render_res.ok and render_res.video_path):
+
+                    if regen_attempts >= max_regen_attempts and not (
+                        render_res.ok and render_res.video_path
+                    ):
                         _log("Maximum regeneration attempts reached; aborting.")
                         break
 

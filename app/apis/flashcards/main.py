@@ -105,6 +105,7 @@ async def list_flashcard_sets(
     session: AsyncSession = Depends(get_session),
 ) -> list[FlashcardSetSummary]:
     from sqlalchemy import select
+
     rows = await session.execute(
         select(DBSet).where(DBSet.user_id == user.id).order_by(DBSet.created_at.desc())
     )
@@ -135,6 +136,7 @@ async def get_flashcard_set(
     from sqlalchemy import select
     from sqlalchemy.orm import selectinload
     from fastapi import HTTPException
+
     result = await session.execute(
         select(DBSet)
         .options(selectinload(DBSet.flashcards))
@@ -150,7 +152,12 @@ async def get_flashcard_set(
         tags=s.tags or [],
         status=s.status.value,
         created_at=s.created_at.isoformat(),
-        flashcards=[FlashcardRead(id=c.id, question=c.question, answer=c.answer, order_index=c.order_index) for c in (s.flashcards or [])],
+        flashcards=[
+            FlashcardRead(
+                id=c.id, question=c.question, answer=c.answer, order_index=c.order_index
+            )
+            for c in (s.flashcards or [])
+        ],
     )
 
 
@@ -167,13 +174,17 @@ async def list_flashcard_runs(
     from app.core.db.schemas.flashcards import MultiFlashcardsResult as DBMulti
 
     rows = await session.execute(
-        select(DBMulti).where(DBMulti.user_id == user.id).order_by(DBMulti.created_at.desc())
+        select(DBMulti)
+        .where(DBMulti.user_id == user.id)
+        .order_by(DBMulti.created_at.desc())
     )
     runs = rows.scalars().all()
 
     out: list[MultiRunSummary] = []
     for r in runs:
-        sets_q = await session.execute(select(DBSet).where(DBSet.multi_result_id == r.id))
+        sets_q = await session.execute(
+            select(DBSet).where(DBSet.multi_result_id == r.id)
+        )
         sets_count = len(sets_q.scalars().all())
         out.append(
             MultiRunSummary(
@@ -242,7 +253,9 @@ async def list_run_sets(
         raise HTTPException(status_code=404, detail="Run not found")
 
     rows = await session.execute(
-        select(DBSet).where(DBSet.multi_result_id == run_id).order_by(DBSet.created_at.desc())
+        select(DBSet)
+        .where(DBSet.multi_result_id == run_id)
+        .order_by(DBSet.created_at.desc())
     )
     sets = rows.scalars().all()
     return [
@@ -277,9 +290,7 @@ async def get_all_flashcards_for_run(
     result = await session.execute(
         select(DBMulti)
         .where(DBMulti.id == run_id, DBMulti.user_id == user.id)
-        .options(
-            selectinload(DBMulti.flashcard_sets).selectinload(DBSet.flashcards)
-        )
+        .options(selectinload(DBMulti.flashcard_sets).selectinload(DBSet.flashcards))
     )
     run = result.scalar_one_or_none()
 
@@ -292,10 +303,7 @@ async def get_all_flashcards_for_run(
     for flashcard_set in run.flashcard_sets or []:
         flashcards = [
             FlashcardRead(
-                id=c.id,
-                question=c.question,
-                answer=c.answer,
-                order_index=c.order_index
+                id=c.id, question=c.question, answer=c.answer, order_index=c.order_index
             )
             for c in (flashcard_set.flashcards or [])
         ]
@@ -376,7 +384,9 @@ async def stream_run_events(
                         # Compute partial counts
                         outline = r.outline or {}
                         topics = (
-                            outline.get("topics", []) if isinstance(outline, dict) else []
+                            outline.get("topics", [])
+                            if isinstance(outline, dict)
+                            else []
                         )
                         total_expected = sum(
                             len(t.get("subtopics", []) or []) for t in topics

@@ -86,7 +86,7 @@ def default_manim_skeleton(scene_name: str = "GeneratedScene") -> str:
     """
     # Define the axis config separately to avoid f-string issues
     axis_config = '{"color": "GRAY", "stroke_width": 1}'
-    
+
     return f"""from __future__ import annotations
 from pydantic import BaseModel, Field
 from manim import (

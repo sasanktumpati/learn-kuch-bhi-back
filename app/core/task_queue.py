@@ -87,7 +87,9 @@ def enqueue_video_generation(
             from sqlalchemy import select
             from app.core.db.schemas.videos import VideoGenerationRequest as DBRequest
 
-            row = await session.execute(select(DBRequest).where(DBRequest.id == request_id))
+            row = await session.execute(
+                select(DBRequest).where(DBRequest.id == request_id)
+            )
             db_req = row.scalar_one_or_none()
             if not db_req:
                 print(f"[queue] Request id {request_id} not found")
@@ -188,7 +190,9 @@ def enqueue_flashcards_generation(
                         "No markdown; plain text questions and answers."
                     )
                     fc = await fc_generate_flashcards(prompt)
-                    await db.finalize_flashcard_set(set_id=placeholder.id, pydantic_set=fc)
+                    await db.finalize_flashcard_set(
+                        set_id=placeholder.id, pydantic_set=fc
+                    )
 
             await db.update_multi_result_status(
                 db_run.id, FCStatus.COMPLETED, completed_at=datetime.now()
