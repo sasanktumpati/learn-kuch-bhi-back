@@ -33,6 +33,7 @@ from .schemas import (
     FlashcardSetSummary,
     FlashcardRead,
     FlashcardSetRead,
+    AggregatedFlashcardsResponse,
 )
 
 
@@ -255,6 +256,68 @@ async def list_run_sets(
         )
         for s in sets
     ]
+
+
+@router.get(
+    f"/{settings.app.version}/flashcards/runs/{{run_id:int}}/all-flashcards",
+    response_model=AggregatedFlashcardsResponse,
+    tags=["flashcards"],
+)
+async def get_all_flashcards_for_run(
+    run_id: int,
+    user: CurrentUser,
+    session: AsyncSession = Depends(get_session),
+) -> AggregatedFlashcardsResponse:
+    """Get all flashcards for a specific run in one aggregated response."""
+    from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
+    from fastapi import HTTPException
+
+    # Get the specific multi-result run
+    result = await session.execute(
+        select(DBMulti)
+        .where(DBMulti.id == run_id, DBMulti.user_id == user.id)
+        .options(
+            selectinload(DBMulti.flashcard_sets).selectinload(DBSet.flashcards)
+        )
+    )
+    run = result.scalar_one_or_none()
+
+    if not run:
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    all_sets = []
+    total_flashcards = 0
+
+    for flashcard_set in run.flashcard_sets or []:
+        flashcards = [
+            FlashcardRead(
+                id=c.id,
+                question=c.question,
+                answer=c.answer,
+                order_index=c.order_index
+            )
+            for c in (flashcard_set.flashcards or [])
+        ]
+        total_flashcards += len(flashcards)
+
+        set_read = FlashcardSetRead(
+            id=flashcard_set.id,
+            title=flashcard_set.title,
+            description=flashcard_set.description,
+            tags=flashcard_set.tags or [],
+            status=flashcard_set.status.value,
+            created_at=flashcard_set.created_at.isoformat(),
+            flashcards=flashcards,
+        )
+        all_sets.append(set_read)
+
+    return AggregatedFlashcardsResponse(
+        prompt=run.original_prompt or "",
+        total_sets=len(all_sets),
+        total_flashcards=total_flashcards,
+        sets=all_sets,
+    )
 
 
 def _sse(event: str | None, data: dict) -> bytes:

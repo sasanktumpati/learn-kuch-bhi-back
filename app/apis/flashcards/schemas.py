@@ -50,3 +50,10 @@ class FlashcardSetSummary(BaseModel):
 
 class FlashcardSetRead(FlashcardSetSummary):
     flashcards: list[FlashcardRead] = Field(default_factory=list)
+
+
+class AggregatedFlashcardsResponse(BaseModel):
+    prompt: str
+    total_sets: int
+    total_flashcards: int
+    sets: list[FlashcardSetRead] = Field(default_factory=list)
