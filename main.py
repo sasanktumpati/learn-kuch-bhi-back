@@ -29,7 +29,11 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3000", "https://kuch-bhi-back.built.systems/"],
+        allow_origins=[
+            "http://localhost:3000",
+            "https://kuch-bhi-back.built.systems/",
+            "https://kuch-bhi.built.systems/",
+        ],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
