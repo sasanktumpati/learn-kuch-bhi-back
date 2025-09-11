@@ -2,9 +2,9 @@ services:
   postgres:
     image: postgres:latest
     environment:
+      POSTGRES_DB: ${POSTGRES_DB_NAME}
       POSTGRES_USER: ${POSTGRES_DB_USER}
       POSTGRES_PASSWORD: ${POSTGRES_DB_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB_NAME}
     networks:
       - kuch-bhi-network
     ports:
@@ -12,7 +12,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_DB_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_DB_NAME}"]
       interval: 5s
       timeout: 5s
       retries: 5
