@@ -33,9 +33,14 @@ Key tech:
   - Windows (PowerShell): `irm https://astral.sh/uv/install.ps1 | iex`
 - Manim system dependencies (OS packages) if not already installed:
   - FFmpeg, Cairo, Pango, FreeType, pkg-config, etc. See Manim install docs for your OS.
-- Gemini API key in your environment (read by `app/core/config.py`):
-  - `.env` example:
+- LLM provider and keys in your environment (read by `app/core/config.py`):
+  - Default provider is Google Gemini. For Gemini:
+    - `MODEL_PROVIDER=google`
     - `GEMINI_API_KEY=your_api_key_here`
+  - To use OpenRouter (OpenAI-compatible):
+    - `MODEL_PROVIDER=openrouter`
+    - `OPENROUTER_API_KEY=your_api_key_here`
+    - `OPENROUTER_MODEL=anthropic/claude-3.5-sonnet` (or your preferred model id)
 
 ## Session Environment (uv)
 Each render session runs in `generated_scenes/<video_id>/` and is initialized as a uv project:

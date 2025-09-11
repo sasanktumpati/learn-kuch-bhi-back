@@ -90,6 +90,12 @@ class Settings(BaseSettings):
     gemini_api_key: str = Field(default=None, alias="GEMINI_API_KEY")
     openrouter_api_key: str = Field(default=None, alias="OPENROUTER_API_KEY")
 
+    # Model provider selection: "google" or "openrouter"
+    model_provider: str = Field(default="google", alias="MODEL_PROVIDER")
+    openrouter_model: str = Field(
+        default="x-ai/grok-code-fast-1", alias="OPENROUTER_MODEL"
+    )
+
     # Context7 MCP (Model Context Protocol) configuration
     context7_enabled: bool = Field(default=True, alias="CONTEXT7_ENABLED")
     context7_mcp_url: str = Field(

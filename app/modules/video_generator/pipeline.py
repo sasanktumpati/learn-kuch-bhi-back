@@ -71,11 +71,9 @@ async def run_video_pipeline(
     _log(f"Session directory: {session_path}")
 
     if settings.context7_enabled and settings.context7_api_key:
-        _log(
-            f"Context7 MCP: enabled at {settings.context7_mcp_url} (tool prefix 'ctx7')"
-        )
+        _log("Context7 API: enabled")
     else:
-        _log("Context7 MCP: disabled or missing API key")
+        _log("Context7 API: disabled or missing API key")
 
     _log("Upgrading prompt with Gemini...")
     upgraded = await upgrade_prompt(user_prompt)

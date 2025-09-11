@@ -21,9 +21,10 @@ from app.modules.video_generator.templates.manim_template import (
     default_manim_skeleton,
 )
 
-from pydantic_ai import Agent, ModelRetry
+from pydantic_ai import Agent, ModelRetry, Tool
 from pydantic_ai._run_context import RunContext
 
+# Default model name for Google Gemini; OpenRouter model comes from settings
 MODEL_NAME = "gemini-2.5-pro"
 MANIM_LIBRARY_ID = "/manimcommunity/manim"
 PYDANTIC_AI_LIBRARY_ID = "/pydantic/pydantic-ai"
@@ -38,6 +39,41 @@ def _build_google_model():
     api_key = settings.gemini_api_key
     provider = GoogleProvider(api_key=api_key)
     return GoogleModel(MODEL_NAME, provider=provider)
+
+
+def _build_openrouter_model():
+    """Build the OpenRouter model via the OpenAI-compatible provider (lazy import).
+
+    Uses OpenRouter's OpenAI-compatible API endpoint. Model name and API key
+    are read from settings.
+    """
+    from app.core.config import settings
+    from pydantic_ai.models.openai import OpenAIChatModel
+    from pydantic_ai.providers.openai import OpenAIProvider
+
+    if not settings.openrouter_api_key:
+        raise RuntimeError(
+            "OpenRouter API key not configured. Set OPENROUTER_API_KEY in your environment."
+        )
+
+    provider = OpenAIProvider(
+        api_key=settings.openrouter_api_key,
+        base_url="https://openrouter.ai/api/v1",
+        # Optionally set headers like HTTP-Referer / X-Title via provider args if needed.
+    )
+    model_name = settings.openrouter_model
+    return OpenAIChatModel(model_name, provider=provider)
+
+
+def _build_model_by_settings():
+    """Return a pydantic-ai Model based on configured provider selection."""
+    from app.core.config import settings
+
+    provider = (settings.model_provider or "google").lower()
+    if provider == "openrouter":
+        return _build_openrouter_model()
+    # default to Google
+    return _build_google_model()
 
 
 class ManimCode(BaseModel):
@@ -85,107 +121,88 @@ class SessionDeps:
 
 
 SYSTEM_PROMPT = (
-    "You are a professional Manim code generator that creates high-quality educational animations. "
-    "Generate correct, lint-clean Python code that produces visually appealing and pedagogically effective videos.\n\n"
-    
-    "CORE REQUIREMENTS:\n"
-    "• Always create a single Scene class with the exact requested name\n"
-    "• Use explicit imports only (NO star imports): from manim import Scene, Text, MathTex, Create, FadeOut, BLUE, PI, etc.\n"
+    "You are an expert Manim code generator specializing in creating high-quality educational animations. "
+    "Your code must be production-ready, pedagogically effective, and visually stunning.\n\n"
+    "🎯 CORE REQUIREMENTS:\n"
+    "• Create exactly ONE Scene class with the precise name specified\n"
+    "• Use ONLY explicit imports: `from manim import Scene, Text, MathTex, Create, FadeOut, BLUE, PI, etc.`\n"
+    "• NEVER use star imports (`from manim import *`)\n"
     "• Ensure all identifiers are properly imported and code is self-contained\n"
-    "• Return complete, runnable Python file content\n\n"
-    
-    "VISUAL QUALITY STANDARDS:\n"
-    "• Text Visibility: Ensure all text fits within screen boundaries with readable font sizes (typically 36-48pt)\n"
-    "• Scene Management: Always use self.clear() between major sections or fade out objects before introducing new content\n"
-    "• Mathematical Precision: Use PI, TAU, and other Manim constants instead of decimal approximations\n"
-    "• Proper Timing: Include self.wait(1-3) between animations for natural pacing\n\n"
-    
-    "COLOR CODING SYSTEM:\n"
-    "• Titles/Headers: WHITE or YELLOW for prominence\n"
-    "• Main Content: BLUE for primary mathematical objects and key concepts\n"
-    "• Secondary Info: GREEN for supporting elements, examples, or steps\n"
-    "• Emphasis/Highlights: RED or ORANGE for important points or warnings\n"
-    "• Background Elements: GRAY or LIGHT_GRAY for grids, axes, or reference lines\n"
-    "• Definitions: PURPLE or PINK for new terms or definitions\n\n"
-    
-    "ANIMATION BEST PRACTICES:\n"
-    "• Use smooth transitions: FadeIn/FadeOut, Transform, Write, Create\n"
-    "• Maintain consistent object positioning and scaling\n"
-    "• Group related elements using VGroup for coordinated animations\n"
-    "• Scale mathematical expressions appropriately (.scale(0.8-1.2))\n"
-    "• Use meaningful variable names and add brief comments for complex logic\n"
-    "• Ensure animations flow logically from simple to complex concepts\n\n"
-    
-    "If MCP Context7 docs are available, consult them for current Manim API best practices."
+    "• Return complete, runnable Python file content that passes linting\n"
+    "• Include proper error handling and graceful degradation\n\n"
+    "🎨 VISUAL EXCELLENCE STANDARDS:\n"
+    "• Text Readability: Ensure text fits screen boundaries and doesn't go out of the screen and one text doesnt overlap onto any other ones\n"
+    "• Scene Transitions: Use `self.clear()` between major sections or fade out objects\n"
+    "• Mathematical Accuracy: Use PI, TAU, E, and other Manim constants (not decimal approximations)\n"
+    "• Timing Mastery: Include `self.wait(1-3)` between animations for natural pacing\n"
+    "• Camera Work: Use appropriate camera movements (zoom, pan, rotate) when beneficial\n"
+    "• Layout Harmony: Maintain consistent spacing, alignment, and proportions\n\n"
+    "🌈 INTELLIGENT COLOR SYSTEM:\n"
+    "• Titles/Headers: WHITE or YELLOW for maximum prominence\n"
+    "• Primary Concepts: BLUE for main mathematical objects and key ideas\n"
+    "• Supporting Elements: GREEN for examples, steps, and secondary information\n"
+    "• Critical Points: RED or ORANGE for warnings, errors, or important highlights\n"
+    "• Background/Reference: GRAY or LIGHT_GRAY for grids, axes, and reference lines\n"
+    "• Definitions/New Terms: PURPLE or PINK for introducing new concepts\n"
+    "• Interactive Elements: CYAN or TEAL for clickable or dynamic components\n\n"
+    "✨ ANIMATION MASTERY:\n"
+    "• Smooth Transitions: Prefer FadeIn/FadeOut, Transform, Write, Create over abrupt changes\n"
+    "• Coordinated Movement: Use VGroup for synchronized animations of related objects\n"
+    "• Scaling Strategy: Scale mathematical expressions appropriately (.scale(0.8-1.2))\n"
+    "• Layered Complexity: Build from simple to complex concepts progressively\n"
+    "• Meaningful Names: Use descriptive variable names and add comments for complex logic\n"
+    "• Performance: Optimize for rendering speed while maintaining visual quality\n\n"
+    "🔧 TECHNICAL EXCELLENCE:\n"
+    "• Code Structure: Organize code with clear sections and logical flow\n"
+    "• Error Prevention: Validate inputs and handle edge cases gracefully\n"
+    "• Memory Management: Clean up objects appropriately to prevent memory leaks\n"
+    "• Modularity: Break complex animations into smaller, reusable methods\n"
+    "• Documentation: Include docstrings for complex methods and classes\n\n"
+    "📚 EDUCATIONAL EFFECTIVENESS:\n"
+    "• Learning Progression: Structure content to build understanding step-by-step\n"
+    "• Visual Clarity: Use diagrams, arrows, and highlights to guide attention and make sure that no text overlaps one another\n"
+    "• Concept Reinforcement: Repeat key ideas through multiple visual representations\n"
+    "• Engagement: Include interactive elements and dynamic visualizations when appropriate\n"
+    "• Accessibility: Ensure content is clear and understandable for the target audience\n\n"
+    "🚀 ADVANCED TECHNIQUES:\n"
+    "• Use ValueTracker for smooth parameter animations\n"
+    "• Implement custom animations with Animation class when needed\n"
+    "• Leverage Manim's 3D capabilities for complex visualizations\n"
+    "• Utilize Manim's built-in mathematical functions and constants\n"
+    "• Consider using Manim's graph and network visualization tools\n\n"
+    "If Context7 documentation is available via the context7_tool, consult it for the latest Manim API best practices and advanced techniques."
 )
 
 
-def _build_context7_toolset() -> list:
-    """Create a Context7 MCP client toolset if enabled/configured.
+def _build_context7_tool() -> Optional[Tool]:
+    """Create a Context7 API tool if enabled/configured.
 
-    Returns an empty list when Context7 is disabled or no API key is present.
+    Returns None when Context7 is disabled or no API key is present.
     """
     from app.core.config import settings
+    from app.modules.video_generator.tools.context7_api import context7_tool
 
     if not settings.context7_enabled or not settings.context7_api_key:
-        return []
-    from pydantic_ai.mcp import MCPServerStdio
+        return None
 
-    server = MCPServerStdio(
-        command="npx",
-        args=["-y", "@upstash/context7-mcp", "--api-key", settings.context7_api_key],
-        tool_prefix="ctx7",
-    )
-    return [server]
+    return Tool(context7_tool, takes_ctx=False)
 
 
-def _make_ctx7_event_handler(on_snippet: Optional[Callable[[str], None]] = None):
-    """Create an event handler that captures first lines of ctx7 tool results."""
+def _make_ctx7_logger(on_snippet: Optional[Callable[[str], None]] = None):
+    """Create a logger function for Context7 tool results."""
     if on_snippet is None:
+        return lambda snippet: None
 
-        async def _handler(_ctx, _events):
-            async for _ in _events:
-                pass
+    def logger(snippet: str) -> None:
+        try:
+            # Extract first few lines for logging
+            lines = snippet.splitlines()[:3]
+            summary = " ".join(lines)
+            on_snippet(summary)
+        except Exception:
+            pass
 
-        return _handler
-
-    async def handler(_ctx: "RunContext", events):
-        from pydantic_ai.messages import (
-            BuiltinToolResultEvent,
-            FunctionToolResultEvent,
-        )
-
-        async for ev in events:
-            try:
-                if not isinstance(
-                    ev, (BuiltinToolResultEvent, FunctionToolResultEvent)
-                ):
-                    continue
-                res = ev.result
-                tool_name = getattr(res, "tool_name", "") or ""
-                if not str(tool_name).startswith("ctx7"):
-                    continue
-                content = getattr(res, "content", None)
-                if content is None:
-                    continue
-                if not isinstance(content, str):
-                    try:
-                        text = json.dumps(content)
-                    except Exception:
-                        text = str(content)
-                else:
-                    text = content
-
-                lines = text.splitlines()[:10]
-                snippet = "\n".join(lines)
-                try:
-                    on_snippet(snippet)
-                except Exception:
-                    pass
-            except Exception:
-                pass
-
-    return handler
+    return logger
 
 
 def _parse_ruff_json(output: str, file_hint: str) -> list[LintIssue]:
@@ -263,14 +280,21 @@ def _run(
 def build_code_agent() -> "Agent[None, ManimCode]":
     from pydantic_ai import Agent
 
-    model = _build_google_model()
+    model = _build_model_by_settings()
+
+    # Build tools list
+    tools = []
+    context7_tool = _build_context7_tool()
+    if context7_tool:
+        tools.append(context7_tool)
+
     agent: Agent[None, ManimCode] = Agent[None, ManimCode](
         model,
         output_type=ManimCode,
         system_prompt=SYSTEM_PROMPT,
         # Retry model responses a few times for better self-correction
         retries=3,
-        toolsets=_build_context7_toolset() or None,
+        tools=tools,
     )
     return agent
 
@@ -320,21 +344,29 @@ def build_session_code_agent(deps: SessionDeps) -> "Agent[SessionDeps, ManimCode
     """Build a coding agent bound to a specific session with registered tools."""
     from pydantic_ai import Agent, Tool
 
-    model = _build_google_model()
+    model = _build_model_by_settings()
+
+    # Build tools list
+    tools = [
+        Tool(docs_tool, takes_ctx=False),
+        # Tools for linting and rendering with context
+        Tool(lint_tool, takes_ctx=True),
+        Tool(render_tool, takes_ctx=True),
+    ]
+
+    # Add Context7 tool if available
+    context7_tool = _build_context7_tool()
+    if context7_tool:
+        tools.append(context7_tool)
+
     agent: Agent[SessionDeps, ManimCode] = Agent[SessionDeps, ManimCode](
         model,
         output_type=ManimCode,
         system_prompt=SYSTEM_PROMPT,
         deps_type=SessionDeps,
-        tools=[
-            Tool(docs_tool, takes_ctx=False),
-            # Tools for linting and rendering with context
-            Tool(lint_tool, takes_ctx=True),
-            Tool(render_tool, takes_ctx=True),
-        ],
+        tools=tools,
         # Also give the model a few retries for output validation/self-correction
         retries=3,
-        toolsets=_build_context7_toolset() or None,
     )
     return agent
 
@@ -348,8 +380,8 @@ def _build_generation_instruction(prompt: str, scene_name: str) -> str:
         f"User prompt: {prompt}"
     )
     instr += (
-        "\nIf available, use MCP Context7 tools (prefix 'ctx7') to fetch docs for "
-        f"{MANIM_LIBRARY_ID} and {PYDANTIC_AI_LIBRARY_ID} as needed."
+        "\nIf available, use Context7 tool to fetch docs. "
+        "Use use_manim=True for Manim documentation or use_manim=False for Pydantic-AI documentation as needed."
     )
     return instr
 
@@ -372,8 +404,8 @@ def _build_fix_instruction(
         f"Current code:\n{json.dumps(current_code)}\n"
     )
     instr += (
-        "\nIf available, consult MCP Context7 docs (prefix 'ctx7') for "
-        f"{MANIM_LIBRARY_ID} and {PYDANTIC_AI_LIBRARY_ID} to guide fixes."
+        "\nIf available, consult Context7 docs to guide fixes. "
+        "Use use_manim=True for Manim documentation or use_manim=False for Pydantic-AI documentation as needed."
     )
     return instr
 
@@ -398,9 +430,7 @@ async def generate_code(
     agent: Agent[None, ManimCode] = build_code_agent()
     instruction = _build_generation_instruction(prompt, scene_name)
     async with agent:
-        res = await agent.run(
-            instruction, event_stream_handler=_make_ctx7_event_handler(on_mcp_snippet)
-        )
+        res = await agent.run(instruction)
     return res.output
 
 
@@ -421,9 +451,7 @@ async def fix_code_with_feedback(
         feedback=feedback,
     )
     async with agent:
-        res = await agent.run(
-            instruction, event_stream_handler=_make_ctx7_event_handler(on_mcp_snippet)
-        )
+        res = await agent.run(instruction)
     return res.output
 
 
