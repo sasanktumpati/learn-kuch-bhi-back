@@ -3,15 +3,23 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, Optional
+from datetime import datetime, timedelta
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from app.core.db.base import async_session_maker
 from app.core.db_services import VideoGenerationService
 from app.core.db_services import FlashcardGenerationService
 from app.modules.video_generator.main import VideoGenerator
-from app.core.db.schemas.videos import GenerationStatus as VideoStatus
-from app.core.db.schemas.flashcards import GenerationStatus as FCStatus
+from app.core.db.schemas.videos import (
+    GenerationStatus as VideoStatus,
+    VideoGenerationRequest,
+)
+from app.core.db.schemas.flashcards import (
+    GenerationStatus as FCStatus,
+    MultiFlashcardsResult,
+)
 from app.modules.flashcards.generator import (
     generate_outline as fc_generate_outline,
     generate_flashcards as fc_generate_flashcards,
@@ -35,8 +43,7 @@ class BackgroundQueue:
             job = await self._queue.get()
             try:
                 await job()
-            except Exception as e:  # noqa: BLE001
-                # Best-effort logging; avoid crashing the worker
+            except Exception as e:
                 print(f"[queue] Worker {idx} job failed: {e}")
             finally:
                 self._queue.task_done()
@@ -49,7 +56,6 @@ class BackgroundQueue:
             self._workers.append(asyncio.create_task(self._worker(i)))
 
     async def stop(self) -> None:
-        # Drain queue and cancel workers
         await self._queue.join()
         for t in self._workers:
             t.cancel()
@@ -73,17 +79,15 @@ def enqueue_video_generation(
     """Enqueue a job that processes an existing VideoGenerationRequest."""
 
     async def _job() -> None:
-        async with async_session_maker() as session:  # type: AsyncSession
+        async with async_session_maker() as session:
             db = VideoGenerationService(session)
 
-            # Mark processing
             from datetime import datetime
 
             await db.update_request_status(
                 request_id, VideoStatus.PROCESSING, started_at=datetime.now()
             )
 
-            # Load the request row for parameters
             from sqlalchemy import select
             from app.core.db.schemas.videos import VideoGenerationRequest as DBRequest
 
@@ -96,7 +100,7 @@ def enqueue_video_generation(
                 return
 
             vg = VideoGenerator()
-            # Run pipeline without creating a new request. Save under existing request.
+
             result = await vg.generate(
                 prompt=db_req.original_prompt,
                 video_id=db_req.video_id,
@@ -108,7 +112,6 @@ def enqueue_video_generation(
                 max_runtime_fix_attempts=db_req.max_runtime_fix_attempts,
             )
 
-            # Persist results
             generation_result, video_record = await db.save_generation_result(
                 request_id=db_req.id,
                 pipeline_result=result,
@@ -140,7 +143,6 @@ def enqueue_flashcards_generation(
         async with async_session_maker() as session:
             db = FlashcardGenerationService(session)
 
-            # Load the run row
             from sqlalchemy import select
             from app.core.db.schemas.flashcards import MultiFlashcardsResult as DBMulti
 
@@ -152,20 +154,16 @@ def enqueue_flashcards_generation(
                 print(f"[queue] Flashcards run id {multi_result_id} not found")
                 return
 
-            # Update to processing
             await db.update_multi_result_status(multi_result_id, FCStatus.PROCESSING)
 
-            # Generate outline and persist
             outline = await fc_generate_outline(base_prompt)
             db_run.outline = outline.model_dump()
             await session.commit()
 
-            # Create topics/subtopics
             index = await db.create_topics_and_subtopics(
                 multi_result_id=db_run.id, outline=outline
             )
 
-            # Generate per subtopic and persist
             from datetime import datetime
 
             for t in outline.topics or []:
@@ -199,3 +197,108 @@ def enqueue_flashcards_generation(
             )
 
     queue.enqueue(_job)
+
+
+async def retry_pending_video_tasks() -> int:
+    """Scan for pending/processing video generation tasks and retry them.
+
+    Returns the number of tasks enqueued for retry.
+    """
+    async with async_session_maker() as session:
+        cutoff_time = datetime.now() - timedelta(minutes=30)
+
+        stmt = select(VideoGenerationRequest).where(
+            VideoGenerationRequest.status.in_(
+                [VideoStatus.PENDING, VideoStatus.PROCESSING]
+            ),
+            (VideoGenerationRequest.started_at.is_(None))
+            | (VideoGenerationRequest.started_at < cutoff_time),
+        )
+
+        result = await session.execute(stmt)
+        pending_requests = result.scalars().all()
+
+        enqueued_count = 0
+        for request in pending_requests:
+            if request.status == VideoStatus.PROCESSING:
+                request.status = VideoStatus.PENDING
+                request.started_at = None
+                await session.commit()
+
+            enqueue_video_generation(
+                request_id=request.id,
+                user_id=request.user_id,
+                title=f"Retry: {request.video_id}",
+                description=f"Retrying interrupted video generation for {request.original_prompt[:100]}...",
+            )
+            enqueued_count += 1
+
+        return enqueued_count
+
+
+async def retry_pending_flashcard_tasks() -> int:
+    """Scan for pending/processing flashcard generation tasks and retry them.
+
+    Returns the number of tasks enqueued for retry.
+    """
+    async with async_session_maker() as session:
+        cutoff_time = datetime.now() - timedelta(minutes=30)
+
+        stmt = select(MultiFlashcardsResult).where(
+            MultiFlashcardsResult.status.in_([FCStatus.PENDING, FCStatus.PROCESSING]),
+            MultiFlashcardsResult.created_at < cutoff_time,
+        )
+
+        result = await session.execute(stmt)
+        pending_results = result.scalars().all()
+
+        enqueued_count = 0
+        for result in pending_results:
+            if result.status == FCStatus.PROCESSING:
+                result.status = FCStatus.PENDING
+                await session.commit()
+
+            enqueue_flashcards_generation(
+                multi_result_id=result.id,
+                user_id=result.user_id,
+                base_prompt=result.original_prompt
+                or "Retry interrupted flashcard generation",
+            )
+            enqueued_count += 1
+
+        return enqueued_count
+
+
+async def retry_all_pending_tasks() -> dict[str, int]:
+    """Retry all pending tasks from both video and flashcard generation.
+
+    Returns a dict with counts of enqueued tasks by type.
+    """
+    print("[startup] Scanning for pending tasks to retry...")
+
+    try:
+        video_count = await retry_pending_video_tasks()
+    except Exception as e:
+        print(f"[startup] Error retrying video tasks: {e}")
+        video_count = 0
+
+    try:
+        flashcard_count = await retry_pending_flashcard_tasks()
+    except Exception as e:
+        print(f"[startup] Error retrying flashcard tasks: {e}")
+        flashcard_count = 0
+
+    result = {
+        "videos": video_count,
+        "flashcards": flashcard_count,
+        "total": video_count + flashcard_count,
+    }
+
+    if result["total"] > 0:
+        print(
+            f"[startup] Successfully enqueued {result['videos']} video tasks and {result['flashcards']} flashcard tasks for retry"
+        )
+    else:
+        print("[startup] No pending tasks found to retry")
+
+    return result

@@ -9,13 +9,19 @@ from app.apis.video_generator.main import router as video_router
 
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
-from app.core.task_queue import queue as _bg_queue
+from app.core.task_queue import queue as _bg_queue, retry_all_pending_tasks
 from app.core.video_manager import video_manager
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     _bg_queue.start()
+
+    try:
+        await retry_all_pending_tasks()
+    except Exception as e:
+        print(f"[startup] Error during task retry: {e}")
+
     try:
         yield
     finally:
