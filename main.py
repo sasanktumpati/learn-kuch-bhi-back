@@ -33,6 +33,7 @@ def create_app() -> FastAPI:
             "http://localhost:3000",
             "https://kuch-bhi-back.built.systems/",
             "https://kuch-bhi.built.systems/",
+	    "kuch-bhi.built.systems",
         ],
         allow_credentials=True,
         allow_methods=["*"],
