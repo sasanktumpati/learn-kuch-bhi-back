@@ -58,7 +58,7 @@ def _build_openrouter_model():
 
     provider = OpenAIProvider(
         api_key=settings.openrouter_api_key,
-        base_url="https://openrouter.ai/api/v1",
+        base_url="https://ai-gateway.vercel.sh/v1",
         # Optionally set headers like HTTP-Referer / X-Title via provider args if needed.
     )
     model_name = settings.openrouter_model
