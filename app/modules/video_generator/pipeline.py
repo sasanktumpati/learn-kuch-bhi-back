@@ -94,6 +94,47 @@ async def run_video_pipeline(
     path_written = _write_code(session_path, scene_file, code_resp.code)
     _log(f"Wrote scene to {path_written}")
 
+    fixed_any = False
+
+    async def _batch_fix(
+        current_lint: LintResult, *, label: str, rounds: int
+    ) -> LintResult:
+        nonlocal fixed_any
+        lint_local = current_lint
+        for round_num in range(1, rounds + 1):
+            issues_json = json.dumps(
+                [i.model_dump() for i in lint_local.issues], indent=2
+            )
+            _log(
+                f"Fixing {len(lint_local.issues)} {label} issues in batch (round {round_num}/{rounds})..."
+            )
+            code_resp = await fix_code_with_feedback(
+                current_code=(session_path / scene_file).read_text(
+                    encoding="utf-8"
+                ),
+                scene_name=scene_name,
+                upgraded_prompt=f"{upgraded.title}\n{upgraded.description}",
+                feedback=(
+                    "Fix ALL of the following Ruff issues in one pass.\n"
+                    "Do not introduce star imports. Keep the same scene class name.\n"
+                    f"Issues (JSON array):\n{issues_json}\n"
+                ),
+                on_mcp_snippet=_ctx7_log,
+            )
+            _write_code(session_path, scene_file, code_resp.code)
+            fixed_any = True
+
+            _log("Re-running Ruff after batch fixes...")
+            lint_local = run_lint(session_path, scene_file)
+            _log(
+                "Ruff: clean"
+                if lint_local.ok
+                else f"Ruff: {len(lint_local.issues)} issue(s) remain"
+            )
+            if lint_local.ok or not lint_local.issues:
+                break
+        return lint_local
+
     _log("Running Ruff lint...")
     lint = run_lint(session_path, scene_file)
     _log("Ruff: clean" if lint.ok else f"Ruff: {len(lint.issues)} issue(s) detected")
@@ -101,50 +142,10 @@ async def run_video_pipeline(
         raw_head = "\n".join((lint.raw or "").splitlines()[:20]).strip()
         if raw_head:
             _log("Ruff raw output (head):\n" + raw_head)
-    fixed_any = False
     if not lint.ok and lint.issues:
         _log("Ruff issues (batch):")
         for i in lint.issues:
             _log(f"- {i.filepath}:{i.line}:{i.column} {i.code} {i.message}")
-
-        async def _batch_fix(
-            current_lint: LintResult, *, label: str, rounds: int
-        ) -> LintResult:
-            nonlocal fixed_any
-            lint_local = current_lint
-            for round_num in range(1, rounds + 1):
-                issues_json = json.dumps(
-                    [i.model_dump() for i in lint_local.issues], indent=2
-                )
-                _log(
-                    f"Fixing {len(lint_local.issues)} {label} issues in batch (round {round_num}/{rounds})..."
-                )
-                code_resp = await fix_code_with_feedback(
-                    current_code=(session_path / scene_file).read_text(
-                        encoding="utf-8"
-                    ),
-                    scene_name=scene_name,
-                    upgraded_prompt=f"{upgraded.title}\n{upgraded.description}",
-                    feedback=(
-                        "Fix ALL of the following Ruff issues in one pass.\n"
-                        "Do not introduce star imports. Keep the same scene class name.\n"
-                        f"Issues (JSON array):\n{issues_json}\n"
-                    ),
-                    on_mcp_snippet=_ctx7_log,
-                )
-                _write_code(session_path, scene_file, code_resp.code)
-                fixed_any = True
-
-                _log("Re-running Ruff after batch fixes...")
-                lint_local = run_lint(session_path, scene_file)
-                _log(
-                    "Ruff: clean"
-                    if lint_local.ok
-                    else f"Ruff: {len(lint_local.issues)} issue(s) remain"
-                )
-                if lint_local.ok or not lint_local.issues:
-                    break
-            return lint_local
 
         lint = await _batch_fix(lint, label="lint", rounds=max_lint_batch_rounds)
 

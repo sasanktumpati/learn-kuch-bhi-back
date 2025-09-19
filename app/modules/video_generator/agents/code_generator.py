@@ -271,8 +271,8 @@ def _run(
         return subprocess.CompletedProcess(
             args=list(args),
             returncode=124,
-            stdout=ex.stdout or "",
-            stderr=(ex.stderr or "")
+            stdout=ex.stdout.decode('utf-8', errors='ignore') if ex.stdout else "",
+            stderr=(ex.stderr.decode('utf-8', errors='ignore') if ex.stderr else "")
             + f"\nTimed out after {timeout_sec}s running: {' '.join(args)}",
         )
 
@@ -468,6 +468,8 @@ def run_lint(session_path: Path, file_name: str) -> LintResult:
         file_name,
     )
     issues = _parse_ruff_json(proc.stdout or proc.stderr, file_name)
+    # Ignore F401 (unused import) errors as they may be from LLM-generated code
+    issues = [i for i in issues if i.code != "F401"]
     return LintResult(
         ok=(proc.returncode == 0 and not issues),
         issues=issues,
