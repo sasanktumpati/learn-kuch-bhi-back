@@ -31,7 +31,7 @@ def _build_google_model():
     from pydantic_ai.providers.google import GoogleProvider
 
     provider = GoogleProvider(api_key=settings.gemini_api_key)
-    return GoogleModel("gemini-2.5-flash", provider=provider)
+    return GoogleModel("gemini-2.0-flash", provider=provider)
 
 
 def _build_openrouter_model():
