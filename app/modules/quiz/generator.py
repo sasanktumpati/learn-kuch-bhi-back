@@ -53,9 +53,6 @@ def _build_openrouter_model():
 
 
 def _build_model_by_settings():
-    provider = (settings.model_provider or "google").lower()
-    if provider == "openrouter":
-        return _build_openrouter_model()
     return _build_google_model()
 
 
