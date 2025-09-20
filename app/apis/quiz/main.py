@@ -36,7 +36,11 @@ def _build_spec(req: CreateRoomRequest) -> QuizSpec:
     )
 
 
-@router.post(f"/{settings.app.version}/quiz/rooms", response_model=CreateRoomResponse, tags=["quiz"]) 
+@router.post(
+    f"/{settings.app.version}/quiz/rooms",
+    response_model=CreateRoomResponse,
+    tags=["quiz"],
+)
 async def create_room(req: CreateRoomRequest) -> CreateRoomResponse:
     spec = _build_spec(req)
     room, host = quiz_manager.create_room(host_name=req.host_name, spec=spec)
@@ -57,7 +61,9 @@ async def create_room(req: CreateRoomRequest) -> CreateRoomResponse:
         # Leave room without questions; frontend can still start later
         room.questions = room.questions or []
     ws_url = f"/{settings.app.version}/quiz/ws/{room.id}?player_id={host.id}"
-    return CreateRoomResponse(room_id=room.id, player_id=host.id, ws_url=ws_url, state=room.to_state())
+    return CreateRoomResponse(
+        room_id=room.id, player_id=host.id, ws_url=ws_url, state=room.to_state()
+    )
 
 
 @router.post(
@@ -116,13 +122,24 @@ async def list_rooms() -> list[RoomListItem]:
                 host_name=(host.name if host else None),
                 topic=room.spec.topic,
                 created_at=(room.created_at.isoformat().replace("+00:00", "Z")),
-                started_at=(room.started_at.isoformat().replace("+00:00", "Z") if room.started_at else None),
-                ended_at=(room.ended_at.isoformat().replace("+00:00", "Z") if room.ended_at else None),
+                started_at=(
+                    room.started_at.isoformat().replace("+00:00", "Z")
+                    if room.started_at
+                    else None
+                ),
+                ended_at=(
+                    room.ended_at.isoformat().replace("+00:00", "Z")
+                    if room.ended_at
+                    else None
+                ),
             )
         )
+
     # Sort: waiting first, newest first
     def _sort_key(it: RoomListItem):
-        status_rank = 0 if it.status == "waiting" else (1 if it.status == "in_progress" else 2)
+        status_rank = (
+            0 if it.status == "waiting" else (1 if it.status == "in_progress" else 2)
+        )
         return (status_rank, it.created_at)
 
     return sorted(items, key=_sort_key)
@@ -152,7 +169,9 @@ async def start_room(room_id: str) -> StartRoomResponse:
                 )
             else:
                 topic = room.spec.topic or "General knowledge"
-                questions = await generate_ai_questions(topic, n=room.spec.num_questions)
+                questions = await generate_ai_questions(
+                    topic, n=room.spec.num_questions
+                )
                 if not questions:
                     # Fallback: one trivial question to avoid hanging room
                     from app.modules.quiz.models import QuizQuestion as QQ
@@ -176,7 +195,9 @@ async def start_room(room_id: str) -> StartRoomResponse:
     response_model=RoomStateResponse,
     tags=["quiz"],
 )
-async def set_ready(room_id: str, player_id: str, ready: bool = True) -> RoomStateResponse:
+async def set_ready(
+    room_id: str, player_id: str, ready: bool = True
+) -> RoomStateResponse:
     try:
         state = await quiz_manager.set_ready(room_id, player_id=player_id, ready=ready)
         return RoomStateResponse(state=state)
@@ -203,7 +224,9 @@ async def ws_room(websocket: WebSocket, room_id: str) -> None:
     await quiz_manager.conns.join(room_id, player_id, websocket)
     # Send initial state
     try:
-        await websocket.send_json({"type": "room_state", "data": room.to_state().model_dump()})
+        await websocket.send_json(
+            {"type": "room_state", "data": room.to_state().model_dump()}
+        )
     except Exception:
         pass
 
@@ -218,14 +241,18 @@ async def ws_room(websocket: WebSocket, room_id: str) -> None:
                 if ans is None:
                     continue
                 try:
-                    await quiz_manager.submit_answer(room_id, player_id=player_id, answer_index=int(ans))
+                    await quiz_manager.submit_answer(
+                        room_id, player_id=player_id, answer_index=int(ans)
+                    )
                 except Exception:
                     # Ignore malformed during MVP
                     pass
             elif mtype == "ready":
                 val = bool(msg.get("ready", True))
                 try:
-                    await quiz_manager.set_ready(room_id, player_id=player_id, ready=val)
+                    await quiz_manager.set_ready(
+                        room_id, player_id=player_id, ready=val
+                    )
                 except Exception:
                     pass
             else:

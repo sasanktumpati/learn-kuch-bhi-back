@@ -31,7 +31,7 @@ def _build_google_model():
     from pydantic_ai.providers.google import GoogleProvider
 
     provider = GoogleProvider(api_key=settings.gemini_api_key)
-    return GoogleModel("gemini-2.5-pro", provider=provider)
+    return GoogleModel("gemini-2.5-flash", provider=provider)
 
 
 def _build_openrouter_model():
@@ -103,11 +103,15 @@ async def generate_ai_questions(topic: str, n: int = 10) -> list[QuizQuestion]:
         elif len(choices) < 4:
             # pad with plausible distractors (very basic fallback)
             while len(choices) < 4:
-                choices.append(f"Option {len(choices)+1}")
+                choices.append(f"Option {len(choices) + 1}")
         idx = int(q.correct_index)
         if idx < 0 or idx >= len(choices):
             idx = 0
-        out.append(QuizQuestion(question=q.question.strip(), choices=choices, correct_index=idx))
+        out.append(
+            QuizQuestion(
+                question=q.question.strip(), choices=choices, correct_index=idx
+            )
+        )
     return out[:n]
 
 
@@ -130,7 +134,9 @@ def _gen_add(min_v: int, max_v: int) -> tuple[str, list[str], int]:
     return f"{a} + {b} = ?", all_opts, all_opts.index(correct)
 
 
-def _gen_div(min_v: int, max_v: int, integer_only: bool = True) -> tuple[str, list[str], int]:
+def _gen_div(
+    min_v: int, max_v: int, integer_only: bool = True
+) -> tuple[str, list[str], int]:
     b = _rand_int(max(min_v, 1), max_v)
     if integer_only:
         # construct divisible pair
@@ -144,7 +150,9 @@ def _gen_div(min_v: int, max_v: int, integer_only: bool = True) -> tuple[str, li
     distractors.discard(correct)
     opts = list(distractors)
     while len(opts) < 3:
-        opts.append(str((ans if isinstance(ans, int) else round(ans, 2)) + _rand_int(-5, 5)))
+        opts.append(
+            str((ans if isinstance(ans, int) else round(ans, 2)) + _rand_int(-5, 5))
+        )
     all_opts = [correct] + opts[:3]
     random.shuffle(all_opts)
     return f"{a} ÷ {b} = ?", all_opts, all_opts.index(correct)
@@ -169,4 +177,3 @@ def generate_math_questions(
             q, ch, idx = _gen_div(min_value, max_value, division_integer_only)
         out.append(QuizQuestion(question=q, choices=ch, correct_index=idx))
     return out
-
