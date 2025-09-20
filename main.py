@@ -6,16 +6,20 @@ from app.apis.auth import router as auth_router
 from app.apis.user_profile.main import router as user_profile_router
 from app.apis.flashcards.main import router as flashcards_router
 from app.apis.video_generator.main import router as video_router
+from app.apis.quiz.main import router as quiz_router
 
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.task_queue import queue as _bg_queue, retry_all_pending_tasks
+from app.modules.quiz.state import quiz_manager
 from app.core.video_manager import video_manager
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     _bg_queue.start()
+    # Start quiz manager cleanup loop (idle rooms auto-clean)
+    quiz_manager.start(idle_seconds=600, sweep_interval=60)
 
     try:
         await retry_all_pending_tasks()
@@ -26,6 +30,10 @@ async def lifespan(app: FastAPI):
         yield
     finally:
         await _bg_queue.stop()
+        try:
+            await quiz_manager.stop()
+        except Exception:
+            pass
 
 
 def create_app() -> FastAPI:
@@ -55,6 +63,7 @@ def create_app() -> FastAPI:
     app.include_router(user_profile_router)
     app.include_router(flashcards_router)
     app.include_router(video_router)
+    app.include_router(quiz_router)
 
     @app.get("/")
     async def root():
