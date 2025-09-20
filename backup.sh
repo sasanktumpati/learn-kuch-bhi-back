@@ -54,7 +54,7 @@ echo "----------------------------------------------------"
 echo "Starting 'uploads' backup..."
 echo "  Source: ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_UPLOADS_DIR}"
 echo "  Destination: ${LOCAL_UPLOADS_DEST_DIR}"
-/opt/homebrew/bin/rsync -avzr "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_UPLOADS_DIR}" "${LOCAL_UPLOADS_DEST_DIR}"
+/usr/bin/rsync -avzr "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_UPLOADS_DIR}" "${LOCAL_UPLOADS_DEST_DIR}"
 echo "'uploads' backup complete!"
 echo "----------------------------------------------------"
 

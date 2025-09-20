@@ -9,7 +9,7 @@ from app.core.config import settings
 from pydantic_ai import Agent
 
 
-MODEL_NAME = "gemini-2.5-flash"
+MODEL_NAME = "gemini-2.5-pro"
 
 
 def _build_google_model():
