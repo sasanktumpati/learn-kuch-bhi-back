@@ -14,7 +14,7 @@ from app.modules.flashcards.models.flashcards import FlashcardSet
 from app.modules.flashcards.models.outline import TopicOutline
 
 OUTLINE_MODEL_NAME = "gemini-2.5-pro"
-FLASHCARDS_MODEL_NAME = "gemini-2.0-flash"
+FLASHCARDS_MODEL_NAME = "gemini-2.5-flash"
 
 
 def _build_google_model(model_name: str, *, thinking_budget: int | None = None):
