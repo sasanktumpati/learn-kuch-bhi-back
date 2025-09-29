@@ -17,6 +17,9 @@ engine = create_async_engine(
     connection_string,
     echo=settings.app.is_testing is True,
     pool_pre_ping=True,
+    pool_size=20,
+    max_overflow=10,
+    pool_recycle=3600,  # Recycle connections after 1 hour
 )
 
 async_session_maker = async_sessionmaker(
@@ -37,3 +40,6 @@ async def get_session() -> AsyncIterator[AsyncSession]:
             await session.rollback()
             logger.error(f"Session rolled back due to error: {e}")
             raise
+        finally:
+            # Ensure session is explicitly closed to return connection to pool
+            await session.close()

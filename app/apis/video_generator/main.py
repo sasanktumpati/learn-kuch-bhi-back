@@ -166,9 +166,10 @@ async def request_events(
         last_status = None
         tick = 0
         try:
-            async with async_session_maker() as session:
-                db = VideoGenerationService(session)
-                while True:
+            while True:
+                # Use a new session for each iteration to avoid connection leaks
+                async with async_session_maker() as session:
+                    db = VideoGenerationService(session)
                     r = await db.get_request_by_video_id(video_uuid)
                     if not r:
                         yield _sse("end", {"reason": "deleted"})
@@ -191,16 +192,18 @@ async def request_events(
                     if last_status in ("completed", "failed"):
                         yield _sse("end", {"status": last_status})
                         break
+                # Session is now properly closed after each iteration
 
-                    # Heartbeat ping every 15 seconds
-                    tick += 1
-                    if tick % 15 == 0:
-                        from datetime import datetime as _dt
+                # Heartbeat ping every 15 seconds
+                tick += 1
+                if tick % 15 == 0:
+                    from datetime import datetime as _dt
 
-                        yield _sse("ping", {"ts": _dt.utcnow().isoformat() + "Z"})
+                    yield _sse("ping", {"ts": _dt.utcnow().isoformat() + "Z"})
 
-                    await asyncio.sleep(1)
+                await asyncio.sleep(1)
         except asyncio.CancelledError:
+            # Client disconnected - session already closed by context manager
             return
 
     return StreamingResponse(

@@ -368,8 +368,9 @@ async def stream_run_events(
         seen_ids: set[int] = set()
         tick = 0
         try:
-            async with async_session_maker() as session:
-                while True:
+            while True:
+                # Use a new session for each iteration to avoid connection leaks
+                async with async_session_maker() as session:
                     # Reload status and sets
                     row = await session.execute(
                         select(DBMulti).where(DBMulti.id == run_id)
@@ -446,19 +447,20 @@ async def stream_run_events(
                     if last_status in ("completed", "failed"):
                         yield _sse("end", {"status": last_status})
                         break
+                # Session is now properly closed after each iteration
 
-                    # Heartbeat ping every 15 seconds
-                    tick += 1
-                    if tick % 15 == 0:
-                        try:
-                            ts = datetime.utcnow().isoformat() + "Z"
-                        except Exception:
-                            ts = None
-                        yield _sse("ping", {"ts": ts})
+                # Heartbeat ping every 15 seconds
+                tick += 1
+                if tick % 15 == 0:
+                    try:
+                        ts = datetime.utcnow().isoformat() + "Z"
+                    except Exception:
+                        ts = None
+                    yield _sse("ping", {"ts": ts})
 
-                    await asyncio.sleep(1)
+                await asyncio.sleep(1)
         except asyncio.CancelledError:
-            # Client disconnected
+            # Client disconnected - session already closed by context manager
             return
 
     return StreamingResponse(
