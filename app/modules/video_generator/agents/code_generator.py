@@ -15,14 +15,13 @@ from pathlib import Path
 from typing import Callable, Optional
 
 from pydantic import BaseModel, Field
+from pydantic_ai import Agent, ModelRetry, Tool
+from pydantic_ai._run_context import RunContext
 
 from app.modules.video_generator.templates.manim_template import (
     MANIM_TIPS,
     default_manim_skeleton,
 )
-
-from pydantic_ai import Agent, ModelRetry, Tool
-from pydantic_ai._run_context import RunContext
 
 # Default model name for Google Gemini; OpenRouter model comes from settings
 MODEL_NAME = "gemini-2.5-pro"
@@ -34,6 +33,7 @@ def _build_google_model():
     """Build the Google Gemini model provider (lazy import)."""
     from pydantic_ai.models.google import GoogleModel
     from pydantic_ai.providers.google import GoogleProvider
+
     from app.core.config import settings
 
     api_key = settings.gemini_api_key
@@ -47,9 +47,10 @@ def _build_openrouter_model():
     Uses OpenRouter's OpenAI-compatible API endpoint. Model name and API key
     are read from settings.
     """
-    from app.core.config import settings
     from pydantic_ai.models.openai import OpenAIChatModel
     from pydantic_ai.providers.openai import OpenAIProvider
+
+    from app.core.config import settings
 
     if not settings.openrouter_api_key:
         raise RuntimeError(
@@ -459,6 +460,7 @@ def run_lint(session_path: Path, file_name: str) -> LintResult:
             "run",
             "ruff",
             "check",
+            "--fix",
             "--output-format",
             "json",
             file_name,
