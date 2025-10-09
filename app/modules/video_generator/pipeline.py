@@ -109,9 +109,7 @@ async def run_video_pipeline(
                 f"Fixing {len(lint_local.issues)} {label} issues in batch (round {round_num}/{rounds})..."
             )
             code_resp = await fix_code_with_feedback(
-                current_code=(session_path / scene_file).read_text(
-                    encoding="utf-8"
-                ),
+                current_code=(session_path / scene_file).read_text(encoding="utf-8"),
                 scene_name=scene_name,
                 upgraded_prompt=f"{upgraded.title}\n{upgraded.description}",
                 feedback=(

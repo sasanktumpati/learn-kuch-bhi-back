@@ -16,11 +16,9 @@ from app.core.db.schemas.auth import User
 from app.core.db.schemas.videos import (
     VideoGenerationRequest as DBRequest,
     VideoGenerationResult as DBResult,
-    GenerationStatus as DBStatus,
 )
 from app.modules.auth import fastapi_users
 from app.apis.deps import current_user_or_query_token
-from app.modules.video_generator.main import VideoGenerator
 from app.core.db_services import VideoGenerationService
 from app.core.task_queue import enqueue_video_generation
 import uuid as _uuid
@@ -293,7 +291,6 @@ async def list_requests(
     session: AsyncSession = Depends(get_session),
 ) -> list[RequestRead]:
     from sqlalchemy import select
-    from app.core.db.schemas.videos import VideoGenerationRequest as DBRequest
 
     rows = await session.execute(
         select(DBRequest)

@@ -451,6 +451,7 @@ async def fix_code_with_feedback(
 
 def run_lint(session_path: Path, file_name: str) -> LintResult:
     """Run Ruff on the given file inside the session directory."""
+
     def _run_ruff_json() -> subprocess.CompletedProcess:
         return _run(
             session_path,
@@ -487,7 +488,9 @@ def run_lint(session_path: Path, file_name: str) -> LintResult:
     issues = _parse_ruff_json(final_output, file_name)
     issues = [i for i in issues if i.code != "F401"]
 
-    raw_segments = [segment for segment in (initial_output, fix_output, final_output) if segment]
+    raw_segments = [
+        segment for segment in (initial_output, fix_output, final_output) if segment
+    ]
     return LintResult(
         ok=(final_proc.returncode == 0 and not issues),
         issues=issues,

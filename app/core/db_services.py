@@ -378,7 +378,7 @@ class FlashcardGenerationService:
         subtopic_index: dict[tuple[str, str], int] = {}
         topics = multi_result.outline.topics or []
         for t_idx, t in enumerate(topics):
-            res = await self.session.execute(
+            await self.session.execute(
                 select(MultiFlashcardsResult).where(
                     MultiFlashcardsResult.id == db_multi_result.id
                 )

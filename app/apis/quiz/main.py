@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import asyncio
-from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 
 from app.core.config import settings
 from app.apis.quiz.schemas import (
@@ -178,7 +176,7 @@ async def start_room(room_id: str) -> StartRoomResponse:
 
                     questions = [
                         QQ(
-                            question=f"Which topic are we studying?",
+                            question="Which topic are we studying?",
                             choices=[topic, "Math", "Science", "History"],
                             correct_index=0,
                         )

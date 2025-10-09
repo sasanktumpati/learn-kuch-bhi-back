@@ -3,7 +3,7 @@ from __future__ import annotations
 from pydantic import BaseModel, Field
 from typing import Optional
 
-from app.modules.quiz.models import QuizMode, QuizSpec, RoomState
+from app.modules.quiz.models import QuizMode, RoomState
 
 
 class CreateRoomRequest(BaseModel):

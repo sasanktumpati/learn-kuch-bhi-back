@@ -7,7 +7,6 @@ from fastapi import APIRouter, Depends, status
 from fastapi.responses import StreamingResponse
 import asyncio
 import json
-from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -19,7 +18,6 @@ from app.core.db.schemas.flashcards import (
 )
 from app.modules.auth import fastapi_users
 from app.apis.deps import current_user_or_query_token
-from app.modules.flashcards.main import MultiFlashcardsGenerator
 from app.modules.flashcards.generator import generate_outline as _generate_outline
 from app.core.db_services import FlashcardGenerationService
 from app.core.task_queue import enqueue_flashcards_generation

@@ -19,7 +19,6 @@ from fastapi import WebSocket
 
 from app.modules.quiz.models import (
     PlayerSummary,
-    QuizMode,
     QuizQuestion,
     QuizSpec,
     RoomState,
@@ -187,7 +186,9 @@ class QuizManager:
                         return
                     # announce question
                     q = room.questions[room.current_question_index]
-                    expires_at = _now_utc() + timedelta(seconds=room.spec.time_per_question_sec)
+                    expires_at = _now_utc() + timedelta(
+                        seconds=room.spec.time_per_question_sec
+                    )
                     room.question_expires_at = expires_at
                     room._question_open = True
                     room._answered.clear()
@@ -210,7 +211,10 @@ class QuizManager:
                     await asyncio.sleep(0.1)
                     if not room._question_open:
                         break
-                    if room.question_expires_at and _now_utc() >= room.question_expires_at:
+                    if (
+                        room.question_expires_at
+                        and _now_utc() >= room.question_expires_at
+                    ):
                         # time out
                         async with room._lock:
                             room._question_open = False
@@ -233,7 +237,8 @@ class QuizManager:
                 async with room._lock:
                     room.current_question_index += 1
                     await self.conns.broadcast(
-                        room.id, {"type": "room_state", "data": room.to_state().model_dump()} 
+                        room.id,
+                        {"type": "room_state", "data": room.to_state().model_dump()},
                     )
                     room.last_activity = _now_utc()
         except asyncio.CancelledError:
@@ -265,7 +270,9 @@ class QuizManager:
         )
 
     # Incoming answers ---------------------------------------------------
-    async def submit_answer(self, room_id: str, *, player_id: str, answer_index: int) -> dict:
+    async def submit_answer(
+        self, room_id: str, *, player_id: str, answer_index: int
+    ) -> dict:
         room = self.rooms.get(room_id)
         if not room:
             raise ValueError("room_not_found")
@@ -345,7 +352,9 @@ class QuizManager:
                 return {"status": "ok", "correct": False}
 
     # Ready state --------------------------------------------------------
-    async def set_ready(self, room_id: str, *, player_id: str, ready: bool) -> RoomState:
+    async def set_ready(
+        self, room_id: str, *, player_id: str, ready: bool
+    ) -> RoomState:
         room = self.rooms.get(room_id)
         if not room:
             raise ValueError("room_not_found")
@@ -357,7 +366,9 @@ class QuizManager:
             room.last_activity = _now_utc()
             state = room.to_state()
         # Broadcast updated state
-        await self.conns.broadcast(room_id, {"type": "room_state", "data": state.model_dump()})
+        await self.conns.broadcast(
+            room_id, {"type": "room_state", "data": state.model_dump()}
+        )
         # Check for auto-start
         await self._maybe_auto_start(room_id)
         return self.rooms[room_id].to_state()  # type: ignore
@@ -378,7 +389,10 @@ class QuizManager:
         # All ready: use existing questions if present, else generate
         try:
             from app.modules.quiz.models import QuizMode
-            from app.modules.quiz.generator import generate_math_questions, generate_ai_questions
+            from app.modules.quiz.generator import (
+                generate_math_questions,
+                generate_ai_questions,
+            )
 
             questions = existing
             if not questions:
@@ -392,7 +406,9 @@ class QuizManager:
                     )
                 else:
                     topic = room.spec.topic or "General knowledge"
-                    questions = await generate_ai_questions(topic, n=room.spec.num_questions)
+                    questions = await generate_ai_questions(
+                        topic, n=room.spec.num_questions
+                    )
                     if not questions:
                         questions = []
             if not questions:
@@ -433,7 +449,9 @@ class QuizManager:
                 now = _now_utc()
                 to_delete: list[str] = []
                 for room_id, room in list(self.rooms.items()):
-                    idle = (now - (room.last_activity or room.created_at)).total_seconds()
+                    idle = (
+                        now - (room.last_activity or room.created_at)
+                    ).total_seconds()
                     connections = self.conns.count(room_id)
                     should_delete = False
                     if room.status == RoomStatus.ENDED and room.ended_at:

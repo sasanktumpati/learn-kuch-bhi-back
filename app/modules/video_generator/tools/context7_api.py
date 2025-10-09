@@ -30,7 +30,7 @@ async def context7_tool(topic: str, tokens: int = 5000, use_manim: bool = True) 
         Raw text response from Context7 API
     """
     if not settings.context7_enabled or not settings.context7_api_key:
-        return f"Context7 is disabled or API key not configured"
+        return "Context7 is disabled or API key not configured"
 
     # Choose library based on use_manim parameter
     library = "manimcommunity/manim" if use_manim else "pydantic/pydantic-ai"
