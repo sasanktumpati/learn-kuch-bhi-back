@@ -451,23 +451,47 @@ async def fix_code_with_feedback(
 
 def run_lint(session_path: Path, file_name: str) -> LintResult:
     """Run Ruff on the given file inside the session directory."""
-    proc = _run(
+    def _run_ruff_json() -> subprocess.CompletedProcess:
+        return _run(
+            session_path,
+            "uv",
+            "run",
+            "ruff",
+            "check",
+            "--output-format",
+            "json",
+            file_name,
+        )
+
+    initial_proc = _run_ruff_json()
+    initial_output = initial_proc.stdout or initial_proc.stderr
+    issues = _parse_ruff_json(initial_output, file_name)
+    issues = [i for i in issues if i.code != "F401"]
+
+    if initial_proc.returncode == 0 and not issues:
+        return LintResult(ok=True, issues=[], raw=initial_output)
+
+    fix_proc = _run(
         session_path,
         "uv",
         "run",
         "ruff",
         "check",
-        "--output-format",
-        "json",
+        "--fix",
         file_name,
     )
-    issues = _parse_ruff_json(proc.stdout or proc.stderr, file_name)
-    # Ignore F401 (unused import) errors as they may be from LLM-generated code
+    fix_output = fix_proc.stdout or fix_proc.stderr
+
+    final_proc = _run_ruff_json()
+    final_output = final_proc.stdout or final_proc.stderr
+    issues = _parse_ruff_json(final_output, file_name)
     issues = [i for i in issues if i.code != "F401"]
+
+    raw_segments = [segment for segment in (initial_output, fix_output, final_output) if segment]
     return LintResult(
-        ok=(proc.returncode == 0 and not issues),
+        ok=(final_proc.returncode == 0 and not issues),
         issues=issues,
-        raw=(proc.stdout or proc.stderr),
+        raw="\n".join(raw_segments),
     )
 
 
